@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Calculator, Loader2, RefreshCcw } from "lucide-react";
+import {
+  ChecklistCard,
+  DashboardSectionCard,
+  EmptyState,
+  StatCard,
+  StatusBadge,
+} from "@/components/dashboard/DashboardPrimitives";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { TaxOptimizationSummary } from "@/lib/agent/tax-optimization";
 
@@ -47,6 +54,18 @@ function getUrgencyClass(urgency: "low" | "medium" | "high") {
   }
 
   return "border-finance-border bg-finance-surface text-finance-text";
+}
+
+function confidenceTone(confidence: "low" | "medium" | "high") {
+  if (confidence === "high") {
+    return "success" as const;
+  }
+
+  if (confidence === "medium") {
+    return "warning" as const;
+  }
+
+  return "neutral" as const;
 }
 
 export default function TaxOptimizationPanel({ refreshKey }: TaxOptimizationPanelProps) {
@@ -119,71 +138,101 @@ export default function TaxOptimizationPanel({ refreshKey }: TaxOptimizationPane
     return `Old regime estimate is lower by ${formatCurrency(Math.abs(delta))}.`;
   }, [summary]);
 
-  return (
-    <section className="rounded-2xl border border-finance-border bg-finance-panel p-6 md:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-finance-muted">Tax Optimization Assistant</p>
-          <h2 className="mt-1 text-2xl font-semibold text-finance-text">80C Room, Regime Hinting, Monthly Actions</h2>
-          <p className="mt-1 text-sm text-finance-muted">
-            Uses your onboarding tax snapshot to estimate remaining deductions and prioritize monthly tax actions.
-          </p>
-        </div>
+  const utilizationPct = useMemo(() => {
+    if (!summary || summary.section80cLimitInr <= 0) {
+      return 0;
+    }
 
+    return Math.max(0, Math.min(100, (summary.section80cUsedInr / summary.section80cLimitInr) * 100));
+  }, [summary]);
+
+  const hasRegimeMismatchWarning = useMemo(() => {
+    if (!summary || !summary.regimeHint.currentRegime) {
+      return false;
+    }
+
+    return (
+      summary.regimeHint.currentRegime !== summary.regimeHint.suggestedRegime &&
+      summary.regimeHint.estimatedPotentialSavingsInr > 5000
+    );
+  }, [summary]);
+
+  return (
+    <DashboardSectionCard
+      eyebrow="Tax Optimization Assistant"
+      title="80C runway, regime confidence, monthly actions"
+      description="Deterministic tax planning guidance based on your onboarding and latest profile signals."
+      actions={
         <button
           type="button"
           onClick={() => void loadTaxSummary()}
           disabled={isLoading}
-          className="inline-flex items-center gap-2 rounded-full border border-finance-border px-4 py-2 text-sm font-semibold text-finance-text hover:bg-finance-surface disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-finance-border px-4 text-sm font-semibold text-finance-text transition-all duration-150 hover:bg-finance-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           Refresh Tax View
         </button>
-      </div>
+      }
+    >
 
       {error && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-finance-red/25 bg-finance-red/10 p-3 text-sm text-finance-red">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-finance-red/25 bg-finance-red/10 p-3 text-sm text-finance-red sm:p-3.5">
           <AlertCircle className="mt-0.5 h-4 w-4" />
           <p>{error}</p>
         </div>
       )}
 
       {isLoading ? (
-        <div className="mt-5 flex items-center gap-2 text-sm text-finance-muted">
+        <div className="mt-4 flex items-center gap-2 text-sm text-finance-muted sm:mt-5">
           <Loader2 className="h-4 w-4 animate-spin" />
           Computing tax optimization summary...
         </div>
       ) : !summary ? (
-        <div className="mt-5 rounded-xl border border-finance-border bg-finance-surface/70 p-4 text-sm text-finance-muted">
-          Complete onboarding tax fields to unlock optimization outputs.
+        <div className="mt-4 sm:mt-5">
+          <EmptyState
+            title="Tax optimization data is not ready"
+            description="Complete onboarding tax fields and refresh this panel to unlock regime and deduction insights."
+          />
         </div>
       ) : (
         <>
-          <section className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Annual Taxable Income</p>
-              <p className="mt-2 text-xl font-semibold text-finance-text">{formatCurrency(summary.annualTaxableIncomeInr)}</p>
-            </article>
-            <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">80C Used</p>
-              <p className="mt-2 text-xl font-semibold text-finance-text">{formatCurrency(summary.section80cUsedInr)}</p>
-            </article>
-            <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">80C Remaining</p>
-              <p className="mt-2 text-xl font-semibold text-finance-green">{formatCurrency(summary.section80cRemainingInr)}</p>
-            </article>
-            <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">FY Deadline</p>
-              <p className="mt-2 text-xl font-semibold text-finance-text">{summary.daysToFinancialYearEnd} days</p>
-              <p className="mt-1 text-xs text-finance-muted">{summary.financialYearEndDate}</p>
-            </article>
+          <section className="mt-2 grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Annual Taxable Income" value={formatCurrency(summary.annualTaxableIncomeInr)} />
+            <StatCard label="80C Used" value={formatCurrency(summary.section80cUsedInr)} />
+            <StatCard label="80C Remaining" value={formatCurrency(summary.section80cRemainingInr)} tone="positive" />
+            <StatCard
+              label="FY Deadline"
+              value={`${summary.daysToFinancialYearEnd} days`}
+              hint={summary.financialYearEndDate}
+              tone={summary.daysToFinancialYearEnd <= 60 ? "critical" : summary.daysToFinancialYearEnd <= 120 ? "warning" : "default"}
+            />
           </section>
 
-          <div className="mt-5 rounded-xl border border-finance-accent/25 bg-finance-accent/10 p-4">
+          <div className="mt-4 rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:mt-5 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">Section 80C Progress</p>
+              <StatusBadge label={`${Math.round(utilizationPct)}% utilized`} tone={utilizationPct >= 90 ? "success" : "warning"} />
+            </div>
+            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-finance-border-soft">
+              <div
+                className="h-full rounded-full bg-finance-accent transition-[width] duration-500 ease-out"
+                style={{ width: `${utilizationPct}%` }}
+                aria-label="80C utilization progress"
+              />
+            </div>
+            <p className="mt-2 text-xs text-finance-muted">
+              Remaining room {formatCurrency(summary.section80cRemainingInr)} · Suggested monthly contribution {formatCurrency(summary.suggestedMonthly80cInr)}
+            </p>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-finance-accent/25 bg-finance-accent/10 p-3.5 sm:p-4">
             <div className="flex items-start gap-2">
               <Calculator className="mt-0.5 h-4 w-4 text-finance-accent" />
               <div>
-                <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">Old vs New Regime Hint</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">Old vs New Regime Hint</p>
+                  <StatusBadge label={`confidence ${summary.regimeHint.confidence}`} tone={confidenceTone(summary.regimeHint.confidence)} />
+                </div>
                 <p className="mt-1 text-sm font-semibold text-finance-text">{summary.regimeHint.message}</p>
                 <p className="mt-1 text-xs text-finance-muted">
                   Current: {formatRegime(summary.regimeHint.currentRegime)} | Suggested: {formatRegime(summary.regimeHint.suggestedRegime)}
@@ -196,29 +245,34 @@ export default function TaxOptimizationPanel({ refreshKey }: TaxOptimizationPane
             </div>
           </div>
 
-          <div className="mt-5">
+          {hasRegimeMismatchWarning ? (
+            <div className="mt-4 rounded-xl border border-finance-red/25 bg-finance-red/10 p-3.5 text-finance-red sm:p-4">
+              <p className="text-sm font-semibold">Consistency warning</p>
+              <p className="mt-1 text-sm">
+                Your current selection differs from the suggested regime with meaningful potential savings. Re-run exact payroll figures before the next declaration lock.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mt-4 sm:mt-5">
             <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Do This Month</p>
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 space-y-2.5 sm:space-y-3">
               {summary.checklist.map((item) => (
-                <article
-                  key={item.id}
-                  className={`rounded-xl border p-4 ${getUrgencyClass(item.urgency)}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold">{item.title}</p>
-                    <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]">
-                      {item.urgency}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed">{item.detail}</p>
-                </article>
+                <div key={item.id} className={getUrgencyClass(item.urgency)}>
+                  <ChecklistCard
+                    title={item.title}
+                    detail={item.detail}
+                    urgency={item.urgency}
+                    actionLabel={item.urgency === "high" ? "Prioritize now" : "Mark for this month"}
+                  />
+                </div>
               ))}
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-finance-muted">{summary.disclaimer}</p>
+          <p className="mt-3 text-xs text-finance-muted sm:mt-4">{summary.disclaimer}</p>
         </>
       )}
-    </section>
+    </DashboardSectionCard>
   );
 }

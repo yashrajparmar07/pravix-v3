@@ -2,6 +2,13 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AlertCircle, Loader2, Send } from "lucide-react";
+import {
+  AIInsightChips,
+  DashboardSectionCard,
+  EmptyState,
+  SectionActionBar,
+  StatusBadge,
+} from "@/components/dashboard/DashboardPrimitives";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AgentStructuredAnswer = {
@@ -15,6 +22,7 @@ type AgentChatMessage = {
   role: "user" | "assistant";
   content: string;
   structured?: AgentStructuredAnswer | null;
+  sentAt: string;
 };
 
 type AgentBootstrapResponse = {
@@ -126,6 +134,13 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
     return payload;
   }, [getAccessToken]);
 
+  const formatTime = useCallback((isoValue: string) => {
+    return new Date(isoValue).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -175,7 +190,8 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
       return;
     }
 
-    const nextUserMessage: AgentChatMessage = { role: "user", content: message };
+    const nowIso = new Date().toISOString();
+    const nextUserMessage: AgentChatMessage = { role: "user", content: message, sentAt: nowIso };
     const historyForRequest = [...messages, nextUserMessage].slice(-8);
 
     setMessages((previous) => [...previous, nextUserMessage]);
@@ -193,7 +209,15 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
       });
 
       const structured = normalizeStructuredAnswer(payload.structured);
-      setMessages((previous) => [...previous, { role: "assistant", content: payload.reply, structured }]);
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: payload.reply,
+          structured,
+          sentAt: new Date().toISOString(),
+        },
+      ]);
       setDebugStatus((previous) => ({ ...previous, chatReady: true }));
     } catch (chatError) {
       setError(chatError instanceof Error ? chatError.message : "Could not send message to AI advisor.");
@@ -209,89 +233,60 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
   }
 
   return (
-    <section className="rounded-2xl border border-finance-border bg-finance-panel p-6 md:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-finance-muted">AI Wealth Advisor</p>
-          <h2 className="mt-1 text-2xl font-semibold text-finance-text">Pravix Copilot</h2>
-          <p className="mt-1 text-sm text-finance-muted">{greeting}</p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase ${
-              debugStatus.tokenPresent
-                ? "border border-finance-green/35 bg-finance-green/10 text-finance-green"
-                : "border border-finance-red/35 bg-finance-red/10 text-finance-red"
-            }`}
-          >
-            token {debugStatus.tokenPresent ? "present" : "missing"}
-          </span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase ${
-              debugStatus.bootstrapLoaded
-                ? "border border-finance-green/35 bg-finance-green/10 text-finance-green"
-                : "border border-finance-red/35 bg-finance-red/10 text-finance-red"
-            }`}
-          >
-            bootstrap {debugStatus.bootstrapLoaded ? "loaded" : "pending"}
-          </span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase ${
-              debugStatus.chatReady
-                ? "border border-finance-green/35 bg-finance-green/10 text-finance-green"
-                : "border border-finance-red/35 bg-finance-red/10 text-finance-red"
-            }`}
-          >
-            chat {debugStatus.chatReady ? "ready" : "blocked"}
-          </span>
-        </div>
-      </div>
+    <DashboardSectionCard
+      eyebrow="AI Wealth Advisor"
+      title="Pravix Copilot"
+      description={greeting}
+      actions={
+        <SectionActionBar>
+          <StatusBadge label={debugStatus.tokenPresent ? "session secure" : "session missing"} tone={debugStatus.tokenPresent ? "success" : "critical"} />
+          <StatusBadge label={debugStatus.bootstrapLoaded ? "context loaded" : "loading context"} tone={debugStatus.bootstrapLoaded ? "success" : "warning"} />
+          <StatusBadge label={debugStatus.chatReady ? "chat ready" : "chat blocked"} tone={debugStatus.chatReady ? "success" : "critical"} />
+        </SectionActionBar>
+      }
+    >
 
       {isLoading && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-finance-muted">
+        <div className="mt-4 flex items-center gap-2 text-sm text-finance-muted sm:mt-5">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading personalized AI context...
         </div>
       )}
 
       {!isLoading && dashboardSummary && (
-        <div className="mt-4 rounded-xl border border-finance-accent/20 bg-finance-accent/10 p-4">
+        <div className="mt-4 rounded-xl border border-finance-accent/20 bg-finance-accent/10 p-3.5 sm:p-4">
           <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">AI Action Plan</p>
           <p className="mt-2 whitespace-pre-wrap text-sm text-finance-text leading-relaxed">{dashboardSummary}</p>
         </div>
       )}
 
       {!isLoading && starterPrompts.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {starterPrompts.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              onClick={() => void sendMessage(prompt)}
-              disabled={isSending}
-              className="rounded-full border border-finance-border px-3 py-1.5 text-xs font-semibold text-finance-text hover:bg-finance-surface disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {prompt}
-            </button>
-          ))}
+        <div className="mt-4 sm:mt-5">
+          <p className="mb-2 text-xs uppercase tracking-[0.14em] text-finance-muted">Quick prompts</p>
+          <AIInsightChips items={starterPrompts} onClick={(prompt) => void sendMessage(prompt)} disabled={isSending} />
         </div>
       )}
 
-      <div className="mt-5 rounded-xl border border-finance-border bg-finance-surface/70 p-4">
-        <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+      <div className="mt-4 rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:mt-5 sm:p-4">
+        <div className="max-h-72 space-y-2.5 overflow-y-auto pr-0.5 sm:space-y-3 sm:pr-1">
           {messages.length === 0 ? (
-            <p className="text-sm text-finance-muted">Ask a question to start your personalized wealth planning chat.</p>
+            <EmptyState
+              title="No messages yet"
+              description="Ask a question to start a personalized strategy conversation based on your profile and portfolio context."
+            />
           ) : (
             messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
                 className={`rounded-lg p-3 text-sm ${
                   message.role === "assistant"
-                    ? "bg-white border border-finance-border text-finance-text"
+                    ? "border border-finance-border bg-white text-finance-text"
                     : "bg-finance-accent text-white"
                 }`}
               >
+                <p className={`text-[10px] uppercase tracking-[0.1em] ${message.role === "assistant" ? "text-finance-muted" : "text-white/80"}`}>
+                  {message.role === "assistant" ? "advisor" : "you"} · {formatTime(message.sentAt)}
+                </p>
                 {message.role === "assistant" && message.structured ? (
                   <div className="space-y-3">
                     <div>
@@ -312,26 +307,26 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
                     </div>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="mt-1 whitespace-pre-wrap">{message.content}</p>
                 )}
               </div>
             ))
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="mt-3.5 flex items-center gap-2 sm:mt-4">
           <input
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             disabled={isSending}
             placeholder="Ask: Where should I invest 15000 INR per month?"
-            className="h-11 flex-1 rounded-lg border border-finance-border bg-white px-3 text-finance-text focus:outline-none focus:ring-2 focus:ring-finance-accent/25"
+            className="h-11 flex-1 rounded-lg border border-finance-border bg-white px-3 text-sm text-finance-text transition-colors focus:outline-none focus:ring-2 focus:ring-finance-accent/25"
           />
           <button
             type="submit"
             disabled={isSending || input.trim().length === 0}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-finance-accent px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-finance-accent px-4 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send
@@ -340,7 +335,7 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
       </div>
 
       {error && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-finance-red/25 bg-finance-red/10 p-3 text-sm text-finance-red">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-finance-red/25 bg-finance-red/10 p-3 text-sm text-finance-red sm:p-3.5">
           <AlertCircle className="mt-0.5 h-4 w-4" />
           <p>{error}</p>
         </div>
@@ -349,6 +344,6 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
       <p className="mt-3 text-xs text-finance-muted">
         Educational guidance only. Validate suitability before investing.
       </p>
-    </section>
+    </DashboardSectionCard>
   );
 }

@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, BellRing, Loader2, RefreshCcw, SendHorizontal } from "lucide-react";
+import {
+  DashboardSectionCard,
+  EmptyState,
+  KeyValueGrid,
+  SectionActionBar,
+  StatCard,
+  StatusBadge,
+} from "@/components/dashboard/DashboardPrimitives";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type SmartAlertItem = {
@@ -15,6 +23,9 @@ type SmartAlertItem = {
   destination: string | null;
   routeStatus: "ready" | "deferred" | "blocked" | "suppressed";
   routeReason: string;
+  dispatchStatus?: "sent" | "failed" | "skipped";
+  dispatchProvider?: string;
+  dispatchError?: string | null;
 };
 
 type Summary = {
@@ -40,6 +51,8 @@ type AlertsPayload = {
   alerts?: SmartAlertItem[];
   summary?: Summary;
   subscription?: AlertsSubscription;
+  generatedAt?: string;
+  dispatchedAt?: string;
   error?: string;
 };
 
@@ -56,6 +69,27 @@ const EMPTY_SUMMARY: Summary = {
   suppressedCount: 0,
 };
 
+type BadgeTone = "neutral" | "success" | "warning" | "critical" | "info";
+
+type RunHistoryItem = {
+  id: string;
+  title: string;
+  timestamp: string;
+  mode: string;
+  summary: Summary;
+};
+
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return "Not available";
+  }
+
+  return new Date(value).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 function getSeverityClassName(severity: SmartAlertItem["severity"]): string {
   if (severity === "high") {
     return "border-finance-red/35 bg-finance-red/10 text-finance-red";
@@ -68,20 +102,36 @@ function getSeverityClassName(severity: SmartAlertItem["severity"]): string {
   return "border-finance-border bg-finance-surface text-finance-text";
 }
 
-function getRouteBadgeClassName(status: SmartAlertItem["routeStatus"]): string {
+function getRouteTone(status: SmartAlertItem["routeStatus"]): BadgeTone {
   if (status === "ready") {
-    return "border border-finance-green/35 bg-finance-green/10 text-finance-green";
+    return "success";
   }
 
   if (status === "deferred") {
-    return "border border-amber-300/40 bg-amber-100/60 text-amber-800";
+    return "warning";
   }
 
   if (status === "blocked") {
-    return "border border-finance-red/35 bg-finance-red/10 text-finance-red";
+    return "critical";
   }
 
-  return "border border-finance-border bg-finance-surface text-finance-muted";
+  return "neutral";
+}
+
+function getDispatchTone(status: SmartAlertItem["dispatchStatus"]): BadgeTone {
+  if (status === "sent") {
+    return "success";
+  }
+
+  if (status === "failed") {
+    return "critical";
+  }
+
+  if (status === "skipped") {
+    return "warning";
+  }
+
+  return "neutral";
 }
 
 function labelFromAlertType(alertType: string): string {
@@ -112,6 +162,13 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
   const [summary, setSummary] = useState<Summary>(EMPTY_SUMMARY);
   const [mode, setMode] = useState<string>("evaluate");
   const [subscription, setSubscription] = useState<AlertsSubscription | null>(null);
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
+  const [lastDispatchedAt, setLastDispatchedAt] = useState<string | null>(null);
+  const [runHistory, setRunHistory] = useState<RunHistoryItem[]>([]);
+
+  const pushHistory = useCallback((entry: RunHistoryItem) => {
+    setRunHistory((previous) => [entry, ...previous].slice(0, 4));
+  }, []);
 
   const getAccessToken = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -161,12 +218,20 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
       setSummary(payload.summary ?? EMPTY_SUMMARY);
       setMode(payload.mode ?? "evaluate");
       setSubscription(payload.subscription ?? null);
+      setLastGeneratedAt(payload.generatedAt ?? null);
+      pushHistory({
+        id: `evaluate-${Date.now()}`,
+        title: "Alerts evaluated",
+        timestamp: payload.generatedAt ?? new Date().toISOString(),
+        mode: payload.mode ?? "evaluate",
+        summary: payload.summary ?? EMPTY_SUMMARY,
+      });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load smart alerts.");
     } finally {
       setIsLoading(false);
     }
-  }, [callEndpoint]);
+  }, [callEndpoint, pushHistory]);
 
   useEffect(() => {
     void loadAlerts();
@@ -182,6 +247,15 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
       setSummary(payload.summary ?? EMPTY_SUMMARY);
       setMode(payload.mode ?? "user-daily");
       setSubscription(payload.subscription ?? null);
+      setLastGeneratedAt(payload.generatedAt ?? null);
+      setLastDispatchedAt(payload.dispatchedAt ?? payload.generatedAt ?? null);
+      pushHistory({
+        id: `dispatch-${Date.now()}`,
+        title: "Daily automation executed",
+        timestamp: payload.dispatchedAt ?? payload.generatedAt ?? new Date().toISOString(),
+        mode: payload.mode ?? "user-daily",
+        summary: payload.summary ?? EMPTY_SUMMARY,
+      });
     } catch (dailyError) {
       setError(dailyError instanceof Error ? dailyError.message : "Could not run daily automation.");
     } finally {
@@ -197,71 +271,104 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
   }, [alerts]);
 
   return (
-    <section className="rounded-2xl border border-finance-border bg-finance-panel p-6 md:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-finance-muted">Smart Alerts</p>
-          <h2 className="mt-1 text-2xl font-semibold text-finance-text">Daily Rules and Channel Routing</h2>
-          <p className="mt-1 text-sm text-finance-muted">
-            Evaluates crash, rebalance drift, SIP due, and tax deadline alerts and routes them to your preferred channels.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
+    <DashboardSectionCard
+      eyebrow="Smart Alerts"
+      title="Rule-driven risk and opportunity routing"
+      description="Crash, rebalance, SIP due, and tax deadline alerts with channel-aware dispatching."
+      actions={
+        <SectionActionBar>
           <button
             type="button"
             onClick={() => void loadAlerts()}
             disabled={isLoading || isRunningDaily}
-            className="inline-flex items-center gap-2 rounded-full border border-finance-border px-4 py-2 text-sm font-semibold text-finance-text hover:bg-finance-surface disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-finance-border px-4 text-sm font-semibold text-finance-text transition-all duration-150 hover:bg-finance-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
             Refresh Alerts
           </button>
-
           <button
             type="button"
             onClick={() => void runDailyAutomation()}
             disabled={isLoading || isRunningDaily}
-            className="inline-flex items-center gap-2 rounded-full bg-finance-accent px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-finance-accent px-4 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isRunningDaily ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
             Run Daily Automation
           </button>
-        </div>
-      </div>
+        </SectionActionBar>
+      }
+    >
 
       {error && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-finance-red/25 bg-finance-red/10 p-3 text-sm text-finance-red">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-finance-red/25 bg-finance-red/10 p-3 text-sm text-finance-red sm:p-3.5">
           <AlertCircle className="mt-0.5 h-4 w-4" />
           <p>{error}</p>
         </div>
       )}
 
-      <section className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Triggered</p>
-          <p className="mt-2 text-xl font-semibold text-finance-text">{summary.triggeredCount}</p>
+      <section className="mt-2 grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Triggered" value={summary.triggeredCount} />
+        <StatCard label="Ready to Send" value={summary.readyCount} tone="positive" />
+        <StatCard label="Deferred" value={summary.deferredCount} tone="warning" />
+        <StatCard label="Blocked and Suppressed" value={summary.blockedCount + summary.suppressedCount} tone="critical" />
+      </section>
+
+      <section className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-2">
+        <article className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Automation Status</p>
+            <StatusBadge label={mode || "evaluate"} tone="info" />
+          </div>
+          <KeyValueGrid
+            items={[
+              { label: "Last evaluation", value: formatDateTime(lastGeneratedAt) },
+              { label: "Last dispatch", value: formatDateTime(lastDispatchedAt) },
+            ]}
+          />
+          {subscription ? (
+            <div className="mt-3 rounded-lg border border-finance-border bg-white p-3 sm:p-3.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge label={`plan ${subscription.plan}`} tone="neutral" />
+                <StatusBadge label={`status ${subscription.status}`} tone="neutral" />
+                <StatusBadge
+                  label={subscription.canUseWhatsappChannel ? "whatsapp unlocked" : "whatsapp locked"}
+                  tone={subscription.canUseWhatsappChannel ? "success" : "warning"}
+                />
+              </div>
+              {!subscription.canUseWhatsappChannel ? (
+                <p className="mt-2 text-xs text-amber-700">
+                  {subscription.upgradeMessage ?? "Upgrade to unlock WhatsApp delivery."}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </article>
-        <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Ready to Send</p>
-          <p className="mt-2 text-xl font-semibold text-finance-green">{summary.readyCount}</p>
-        </article>
-        <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Deferred</p>
-          <p className="mt-2 text-xl font-semibold text-amber-700">{summary.deferredCount}</p>
-        </article>
-        <article className="rounded-xl border border-finance-border bg-finance-panel p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Blocked/Suppressed</p>
-          <p className="mt-2 text-xl font-semibold text-finance-red">{summary.blockedCount + summary.suppressedCount}</p>
+
+        <article className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
+          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Recent Activity</p>
+          {runHistory.length === 0 ? (
+            <p className="mt-2 text-sm text-finance-muted">No activity yet. Run an evaluation to build a timeline.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {runHistory.map((item) => (
+                <div key={item.id} className="rounded-lg border border-finance-border bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(10,25,48,0.06)] sm:p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-finance-text">{item.title}</p>
+                    <StatusBadge label={item.mode} tone="info" />
+                  </div>
+                  <p className="mt-1 text-xs text-finance-muted">{formatDateTime(item.timestamp)}</p>
+                  <p className="mt-1 text-xs text-finance-muted">
+                    Ready {item.summary.readyCount} · Deferred {item.summary.deferredCount} · Blocked {item.summary.blockedCount}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </article>
       </section>
 
-      <div className="mt-5 rounded-lg border border-finance-border bg-finance-surface/70 p-3 text-xs text-finance-muted">
-        Evaluation mode: {mode || "evaluate"}
-      </div>
-
       {subscription && (
-        <div className="mt-3 rounded-lg border border-finance-border bg-finance-surface/70 p-3 text-xs">
+        <div className="mt-3 rounded-lg border border-finance-border bg-finance-surface/70 p-3 text-xs sm:p-3.5">
           <div className="flex flex-wrap items-center gap-2 text-finance-muted">
             <span>
               Plan: <span className="font-semibold uppercase text-finance-text">{subscription.plan}</span>
@@ -280,20 +387,23 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
       )}
 
       {isLoading ? (
-        <div className="mt-6 flex items-center gap-2 text-sm text-finance-muted">
+        <div className="mt-5 flex items-center gap-2 text-sm text-finance-muted sm:mt-6">
           <Loader2 className="h-4 w-4 animate-spin" />
           Evaluating smart alerts...
         </div>
       ) : sortedAlerts.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-finance-border bg-finance-surface/70 p-4 text-sm text-finance-muted">
-          No smart alerts are currently triggered for today.
+        <div className="mt-5 sm:mt-6">
+          <EmptyState
+            title="No active alerts right now"
+            description="Your portfolio signals look stable at the moment. Re-run daily automation or check again after market movement."
+          />
         </div>
       ) : (
-        <div className="mt-6 space-y-3">
+        <div className="mt-5 space-y-3 sm:mt-6">
           {sortedAlerts.map((alert, index) => (
             <article
               key={`${alert.alertType}-${index}`}
-              className={`rounded-xl border p-4 ${getSeverityClassName(alert.severity)}`}
+              className={`rounded-xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(10,25,48,0.08)] sm:p-4 ${getSeverityClassName(alert.severity)}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -301,33 +411,36 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
                   <p className="text-sm font-semibold">{labelFromAlertType(alert.alertType)}</p>
                 </div>
 
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${getRouteBadgeClassName(alert.routeStatus)}`}>
-                  {alert.routeStatus}
-                </span>
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge label={alert.routeStatus} tone={getRouteTone(alert.routeStatus)} />
+                  {alert.dispatchStatus ? (
+                    <StatusBadge label={alert.dispatchStatus} tone={getDispatchTone(alert.dispatchStatus)} />
+                  ) : null}
+                </div>
               </div>
 
               <p className="mt-2 font-semibold">{alert.title}</p>
               <p className="mt-1 text-sm leading-relaxed">{alert.message}</p>
 
-              <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
-                <p>
-                  Channel: <span className="font-semibold">{alert.channel ?? "none"}</span>
-                </p>
-                <p>
-                  Destination: <span className="font-semibold">{alert.destination ?? "not available"}</span>
-                </p>
-                <p>
-                  Metric: <span className="font-semibold">{alert.metricLabel ?? "n/a"}</span>
-                  {alert.metricValue !== null ? ` (${alert.metricValue})` : ""}
-                </p>
-                <p>
-                  Route Note: <span className="font-semibold">{alert.routeReason}</span>
-                </p>
+              <div className="mt-3">
+                <KeyValueGrid
+                  items={[
+                    { label: "Channel", value: alert.channel ?? "none" },
+                    { label: "Destination", value: alert.destination ?? "not available" },
+                    {
+                      label: "Metric",
+                      value: alert.metricValue !== null ? `${alert.metricLabel ?? "n/a"} (${alert.metricValue})` : (alert.metricLabel ?? "n/a"),
+                    },
+                    { label: "Route note", value: alert.routeReason },
+                    { label: "Provider", value: alert.dispatchProvider ?? "pending" },
+                  ]}
+                />
               </div>
+              {alert.dispatchError ? <p className="mt-2 text-xs text-finance-red">Dispatch error: {alert.dispatchError}</p> : null}
             </article>
           ))}
         </div>
       )}
-    </section>
+    </DashboardSectionCard>
   );
 }

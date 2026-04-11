@@ -273,14 +273,28 @@ export default function Home() {
       <div className={`flex flex-col min-h-screen transition-opacity duration-700 ${isHeroReady ? "opacity-100" : "opacity-0"}`}>
         {/* HERO SECTION */}
         <section className="relative overflow-hidden border-b border-finance-border/70 bg-finance-bg pt-24 pb-14 md:pt-28 md:pb-20">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(15,91,82,0.06),transparent_42%),radial-gradient(circle_at_82%_74%,rgba(179,138,74,0.08),transparent_48%)]" />
+          <div className="pointer-events-none absolute inset-0">
+            <video
+              aria-hidden="true"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 h-full w-full object-cover"
+            >
+              <source src="/video/pravix%20hero%20video.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(244,240,232,0.9),rgba(244,240,232,0.82)_42%,rgba(255,255,255,0.72)_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(15,91,82,0.06),transparent_42%),radial-gradient(circle_at_82%_74%,rgba(179,138,74,0.08),transparent_48%)]" />
+          </div>
 
           <div className="relative z-10 mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
             <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
               {/* Left: Life-outcome messaging */}
               <div className="max-w-2xl text-center lg:text-left">
                 <p className="inline-flex items-center rounded-full border border-finance-border bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-finance-muted shadow-sm">
-                  Wealth planning for every Indian
+                  Goal-based wealth planning for modern Indian families
                 </p>
 
                 <h1 className="mt-6 text-balance text-[clamp(2.05rem,5.2vw,4.25rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-finance-text">
@@ -288,7 +302,7 @@ export default function Home() {
                 </h1>
 
                 <p className="mt-5 max-w-xl text-pretty text-base leading-relaxed text-finance-muted md:text-lg">
-                  Plan goals, track investments, optimize taxes, and get timely AI guidance in one place.
+                  Pravix helps you plan goals, track investments, optimize taxes, and get AI guidance in one place.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -296,7 +310,7 @@ export default function Home() {
                     href="/onboarding"
                     className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-full bg-finance-accent px-7 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(15,91,82,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0c4a43]"
                   >
-                    Start Your Plan
+                    Start your plan
                     <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-1" />
                   </Link>
 
@@ -309,12 +323,13 @@ export default function Home() {
                   </Link>
                 </div>
 
-                <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
+                <p className="mt-7 text-xs font-semibold uppercase tracking-[0.14em] text-finance-muted">Popular family goals</p>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
                   {[
-                    "Goal-based planning",
-                    "AI-assisted guidance",
-                    "Tax-aware investing",
-                    "Secure private profile",
+                    "Child education",
+                    "Retirement",
+                    "Home down payment",
+                    "Emergency corpus",
                   ].map((chip) => (
                     <span
                       key={chip}
@@ -382,9 +397,89 @@ export default function Home() {
           </div>
         </section>
 
+        {/* SECTION: WHO PRAVIX IS FOR */}
+        <motion.section
+          id="why-goals"
+          className="bg-[linear-gradient(180deg,#faf8f2_0%,#f4efe4_100%)] py-20 md:py-24"
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={denseSectionViewport}
+        >
+          <div className="mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <motion.article
+                className="rounded-3xl border border-finance-border/80 bg-white p-7 shadow-[0_16px_34px_rgba(15,91,82,0.08)]"
+                variants={featureCardReveal}
+                custom={0}
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f5b52]">Who It&apos;s For</p>
+                <h3 className="mt-3 text-2xl font-bold tracking-tight text-[#0a1930] md:text-3xl">
+                  Built for people planning real life goals.
+                </h3>
+                <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                  {[
+                    "Salaried professionals",
+                    "Young families",
+                    "Goal-based investors",
+                    "Tax-conscious earners",
+                  ].map((item) => (
+                    <div key={item} className="rounded-xl border border-finance-border bg-[#fbf8f1] px-4 py-3 text-sm font-medium text-[#324a45]">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </motion.article>
+
+              <motion.article
+                className="rounded-3xl border border-finance-border/80 bg-white p-7 shadow-[0_16px_34px_rgba(15,91,82,0.08)]"
+                variants={featureCardReveal}
+                custom={1}
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f5b52]">Money Mistakes Pravix Helps Prevent</p>
+                <div className="mt-5 space-y-2.5">
+                  {[
+                    "Missed SIPs and delayed monthly actions",
+                    "Poor diversification and unnoticed concentration",
+                    "Last-minute tax moves in March",
+                    "Emotional reactions to market noise",
+                  ].map((mistake) => (
+                    <div key={mistake} className="rounded-xl border border-finance-border bg-[#fbf8f1] px-4 py-3 text-sm text-[#4f6180]">
+                      {mistake}
+                    </div>
+                  ))}
+                </div>
+              </motion.article>
+            </div>
+
+            <motion.article
+              className="mt-6 rounded-3xl border border-[#d8d0c0] bg-white p-7 shadow-[0_16px_34px_rgba(15,91,82,0.08)]"
+              variants={featureCardReveal}
+              custom={2}
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0f5b52]">Built For Indian Wealth Decisions</p>
+              <h3 className="mt-3 text-2xl font-bold tracking-tight text-[#0a1930] md:text-3xl">
+                Local context, family goals, and disciplined long-term planning.
+              </h3>
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                {[
+                  "INR-based goals",
+                  "Section 80C and tax runway",
+                  "Family-focused milestones",
+                  "Monthly action nudges",
+                ].map((item) => (
+                  <span key={item} className="rounded-full border border-[#0f5b52]/18 bg-[#f1eee4] px-3.5 py-2 text-xs font-semibold text-[#0f5b52]">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </motion.article>
+          </div>
+        </motion.section>
+
         {/* SECTION 1: EXECUTIVE INTELLIGENCE LAYER */}
         <motion.section
-          id="intelligence"
+          id="insights"
           className="relative overflow-hidden bg-[#1c302c] py-24 text-white md:py-28"
           variants={sectionReveal}
           initial="hidden"
@@ -396,23 +491,23 @@ export default function Home() {
           <div className="relative mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
             <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b38a4a]">Pravix Command Layer</p>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b38a4a]">Know What Matters This Month</p>
                 <h3 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">
-                  Premium intelligence, built for your family&apos;s next decade.
+                  Clear signals for your next money move.
                 </h3>
                 <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#d8ddd1] md:text-lg">
-                  Pravix unifies market pulse, portfolio behavior, tax runway, and AI guidance into one decision surface so every financial move feels intentional, calm, and deeply personalized.
+                  See what needs attention now, what can wait, and what action keeps your family goals on track.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/20 bg-white/10 p-6 backdrop-blur-md sm:p-7">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b38a4a]">What Runs In Real Time</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b38a4a]">Signals Pravix Checks For You</p>
                 <motion.div className="mt-4 space-y-3" initial="hidden" whileInView="show" viewport={narrativeViewport}>
                   {[
-                    "Fear & Greed + USD/INR free market pulse",
-                    "Auto-prioritized dashboard focus ranking",
-                    "Smart alerts routing with delivery channels",
-                    "AI copilot recommendations with risk warnings",
+                    "Market mood and INR trend for context",
+                    "Goal progress and monthly plan health",
+                    "SIP, rebalance, and tax nudges before deadlines",
+                    "AI guidance with reason, risk note, and next step",
                   ].map((item, index) => (
                     <motion.div
                       key={item}
@@ -431,24 +526,24 @@ export default function Home() {
               {[
                 {
                   icon: Sparkles,
-                  title: "Executive Intelligence",
+                  title: "Monthly Goal Focus",
                   detail:
-                    "Applies relevance scoring across modules so you know where to act first every day.",
-                  metric: "Auto-focus ready",
+                    "Pravix highlights the one goal area where your action this week will matter most.",
+                  metric: "Prioritized weekly",
                 },
                 {
                   icon: BellRing,
                   title: "Smart Alerts",
                   detail:
-                    "Tracks crash, SIP, rebalance, and tax deadline signals with controlled routing logic.",
-                  metric: "Daily automation",
+                    "Timely nudges help you avoid missed SIPs, drift, and last-minute tax pressure.",
+                  metric: "Timely alerts",
                 },
                 {
                   icon: MessageCircle,
-                  title: "Pravix AI Copilot",
+                  title: "Pravix AI Buddy",
                   detail:
-                    "Turns profile + goals + holdings + tax context into practical next steps you can execute.",
-                  metric: "Structured advice",
+                    "Get practical next actions in plain language, with clear reasoning and risk context.",
+                  metric: "Action-ready guidance",
                 },
               ].map((item, index) => (
                 <motion.article
@@ -618,19 +713,60 @@ export default function Home() {
           <div className="mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
             <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f5b52]">Inside Your Dashboard</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f5b52]">What You Can Do With Pravix</p>
                 <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#0a1930] md:text-5xl">
-                  Five coordinated modules. One wealth operating system.
+                  Feature clusters built around your outcomes.
                 </h2>
               </div>
               <Link
                 href="/dashboard"
                 className="inline-flex items-center gap-2 self-start rounded-full border border-[#0f5b52]/25 bg-white px-5 py-2.5 text-sm font-semibold text-[#0f5b52] transition-colors hover:bg-[#f1eee4]"
               >
-                Open Dashboard
+                View dashboard preview
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
+
+            <motion.div className="mt-8 grid gap-5 lg:grid-cols-3" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
+              {[
+                {
+                  title: "Plan smarter",
+                  summary: "Set goals clearly, personalize risk, and build the right baseline allocation.",
+                  items: ["Smart onboarding", "Goal setup", "Risk profile"],
+                },
+                {
+                  title: "Act on time",
+                  summary: "Stay consistent with monthly actions instead of reacting late.",
+                  items: ["Smart alerts", "Focus ranking", "Monthly checklist"],
+                },
+                {
+                  title: "Optimize wealth",
+                  summary: "Improve long-term outcomes across tax, holdings, and guided decisions.",
+                  items: ["Tax assistant", "Holdings analysis", "Pravix AI Buddy"],
+                },
+              ].map((cluster, index) => (
+                <motion.article
+                  key={cluster.title}
+                  className="rounded-2xl border border-[#d7d0c1] bg-white p-5 shadow-[0_12px_28px_rgba(15,91,82,0.08)]"
+                  variants={featureCardReveal}
+                  custom={index}
+                >
+                  <h3 className="text-xl font-bold text-[#0a1930]">{cluster.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#50607d]">{cluster.summary}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {cluster.items.map((item) => (
+                      <span key={item} className="rounded-full border border-[#0f5b52]/20 bg-[#f1eee4] px-3 py-1 text-xs font-semibold text-[#0f5b52]">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </motion.article>
+              ))}
+            </motion.div>
+
+            <p className="mt-8 text-sm text-[#4f6180]">
+              Every module below remains available. They now work together to help you plan smarter, act on time, and optimize wealth.
+            </p>
 
             <motion.div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
               {[
@@ -654,13 +790,13 @@ export default function Home() {
                 },
                 {
                   icon: Sparkles,
-                  title: "Executive Intelligence",
-                  desc: "Merges free market APIs with your own context and recommends the highest-impact focus area.",
-                  badge: "Priority Engine",
+                  title: "Next Best Action Engine",
+                  desc: "Combines goals, alerts, holdings, and tax context to show what needs attention first.",
+                  badge: "Action Priority",
                 },
                 {
                   icon: MessageCircle,
-                  title: "AI Wealth Copilot",
+                  title: "Pravix AI Buddy",
                   desc: "Conversational guidance with recommendation, reason, risk warning, and next action in every response.",
                   badge: "Human + AI",
                 },
@@ -763,7 +899,7 @@ export default function Home() {
 
         {/* SECTION 3: HUMAN JOURNEY + EMOTIONAL CONNECT */}
         <motion.section
-          id="journey"
+          id="how-it-works"
           className="border-y border-finance-border/70 bg-white py-24 md:py-28"
           variants={sectionReveal}
           initial="hidden"
@@ -772,38 +908,38 @@ export default function Home() {
         >
           <div className="mx-auto grid w-full max-w-7xl gap-12 px-6 md:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-14">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f5b52]">A Guided Journey</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f5b52]">How Pravix Works</p>
               <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#0a1930] md:text-5xl">
-                From uncertainty to confidence, one step at a time.
+                A simple four-step path from goals to action.
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#50607d] md:text-lg">
-                Pravix combines onboarding precision, intelligent automation, and advisor-ready outputs so your plan feels both personal and professionally engineered.
+                Share your goals, get a clear roadmap, follow monthly actions, and adjust with AI plus expert support.
               </p>
 
               <motion.div className="mt-10 space-y-4" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
                 {[
                   {
                     step: "01",
-                    title: "Complete smart onboarding",
-                    detail: "Capture goals, risk appetite, tax profile, and communication preferences in one guided flow.",
+                    title: "Tell us your goals",
+                    detail: "Capture your milestones, income profile, risk comfort, and preferences in one guided flow.",
                     icon: CircleUserRound,
                   },
                   {
                     step: "02",
-                    title: "Get your intelligent baseline",
-                    detail: "Pravix generates your first focus map across alerts, holdings, tax, profile, and AI advisor.",
+                    title: "Get your wealth roadmap",
+                    detail: "See a practical starting plan across goals, allocation, tax runway, and monthly focus.",
                     icon: Target,
                   },
                   {
                     step: "03",
-                    title: "Execute monthly actions",
-                    detail: "Use alert routing, tax checklisting, and holdings diagnostics to stay consistent without noise.",
+                    title: "Track progress and monthly actions",
+                    detail: "Stay disciplined with timely nudges, checklists, and progress tracking across each goal.",
                     icon: RefreshCcw,
                   },
                   {
                     step: "04",
-                    title: "Refine with expert and AI",
-                    detail: "Collaborate with Pravix advisors and Copilot to keep your strategy adaptive yet disciplined.",
+                    title: "Adjust with AI + expert support",
+                    detail: "Use Pravix AI Buddy and advisor guidance to refine the plan as life and markets change.",
                     icon: Compass,
                   },
                 ].map((item, index) => (
@@ -880,7 +1016,7 @@ export default function Home() {
 
         {/* SECTION 4: TRUST + LEARN + PREMIUM CTA */}
         <motion.section
-          id="trust"
+          id="contact"
           className="relative overflow-hidden bg-[#1a2a26] py-24 text-white md:py-28"
           variants={sectionReveal}
           initial="hidden"
@@ -893,16 +1029,16 @@ export default function Home() {
             <motion.div className="grid gap-6 md:grid-cols-3" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
               {[
                 {
-                  title: "Secure by design",
+                  title: "Secure private profile",
                   desc: "Authenticated sessions with user-scoped access and robust backend enforcement for profile privacy.",
                 },
                 {
-                  title: "Built for execution",
-                  desc: "From onboarding to alert delivery, every surface is action-oriented, not just informational.",
+                  title: "Educational guidance with transparent reasoning",
+                  desc: "Each recommendation explains what changed, why it matters, and what you can do next.",
                 },
                 {
-                  title: "Continuous learning",
-                  desc: "Use the Learn section and advisor context to improve decisions month after month.",
+                  title: "Human + AI support",
+                  desc: "Use self-serve guidance daily, and connect with an expert when you want deeper confidence.",
                 },
               ].map((item, index) => (
                 <motion.article
@@ -917,15 +1053,19 @@ export default function Home() {
               ))}
             </motion.div>
 
+            <div className="mt-6 rounded-2xl border border-white/20 bg-white/8 px-5 py-4 text-sm leading-relaxed text-[#d8ddd1]">
+              Pravix provides educational guidance and planning support. It does not promise guaranteed returns and does not replace personalized licensed investment advice.
+            </div>
+
             <div className="mt-14 rounded-3xl border border-[#40635d] bg-[linear-gradient(135deg,#1a322d_0%,#255449_58%,#0f5b52_100%)] p-8 shadow-[0_24px_58px_rgba(0,0,0,0.28)] sm:p-10 md:p-12">
               <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
                 <div className="max-w-2xl">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#b38a4a]">Ready To Experience Pravix</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#b38a4a]">Start With Confidence</p>
                   <h2 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-                    Give your money a strategy that feels premium, personal, and practical.
+                    Stay on track for every major life goal.
                   </h2>
                   <p className="mt-4 text-base leading-relaxed text-[#d8ddd1] md:text-lg">
-                    Start with guided onboarding, unlock your executive dashboard, and let Pravix AI keep you one step ahead.
+                    Begin with guided onboarding, follow clear monthly actions, and use Pravix support whenever you need it.
                   </p>
                 </div>
 
@@ -934,26 +1074,36 @@ export default function Home() {
                     href="/onboarding"
                     className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-[#255449] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)]"
                   >
-                    Start Onboarding
+                    Start your plan
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                   <Link
-                    href="/dashboard"
+                    href="/onboarding?mode=advisor"
                     className="inline-flex h-12 items-center justify-center rounded-full border border-white/40 bg-white/10 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/20"
                   >
-                    Open Dashboard
+                    Talk to an expert
                   </Link>
                   <Link
-                    href="/learn"
+                    href="/dashboard"
                     className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-transparent px-6 text-sm font-semibold text-[#d8ddd1] transition-colors hover:bg-white/10"
                   >
-                    Explore Learn Center
+                    View dashboard preview
                   </Link>
                 </div>
               </div>
             </div>
           </div>
         </motion.section>
+
+        <div className="fixed inset-x-0 bottom-3 z-40 px-4 sm:hidden">
+          <Link
+            href="/onboarding"
+            className="mx-auto flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-full bg-finance-accent text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,91,82,0.34)]"
+          >
+            Start your plan
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
       </div>
     </>

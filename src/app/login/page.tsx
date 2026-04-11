@@ -7,7 +7,7 @@ export default function LoginPage() {
       <SiteHeader />
       <main className="min-h-screen bg-finance-bg pt-28 pb-16">
         <div className="mx-auto w-full max-w-5xl px-6">
-          <section className="rounded-2xl border border-finance-border bg-finance-panel p-8 md:p-10 shadow-[0_20px_45px_rgba(43,92,255,0.08)]">
+          <section className="rounded-2xl border border-finance-border bg-finance-panel p-8 md:p-10 shadow-[0_18px_36px_rgba(31,42,36,0.08)]">
             <p className="text-[11px] uppercase tracking-[0.16em] text-finance-muted">Account Access</p>
             <h1 className="mt-2 text-3xl md:text-4xl font-semibold tracking-tight text-finance-text">Login</h1>
             <p className="mt-3 text-finance-muted max-w-2xl">

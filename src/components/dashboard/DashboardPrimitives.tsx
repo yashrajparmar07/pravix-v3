@@ -26,16 +26,21 @@ export function DashboardSectionCard({
   bodyClassName,
 }: DashboardSectionCardProps) {
   return (
-    <section className={cx("rounded-2xl border border-finance-border bg-finance-panel transition-shadow duration-200", className)}>
-      <header className="flex flex-wrap items-start justify-between gap-3 px-4 pt-5 sm:gap-4 sm:px-6 sm:pt-6 md:px-8 md:pt-7">
+    <section
+      className={cx(
+        "rounded-2xl border border-finance-border bg-white/95 shadow-[0_8px_22px_rgba(10,25,48,0.05)] backdrop-blur-[1px] transition-shadow duration-200",
+        className,
+      )}
+    >
+      <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-6 sm:gap-4 sm:px-7 sm:pt-7 md:px-9 md:pt-8">
         <div>
           <p className="text-[11px] uppercase tracking-[0.16em] text-finance-muted">{eyebrow}</p>
-          <h2 className="mt-1 text-xl font-semibold text-finance-text sm:text-2xl">{title}</h2>
+          <h2 className="mt-1 text-xl font-medium text-finance-text sm:text-2xl">{title}</h2>
           {description ? <p className="mt-1.5 text-sm leading-relaxed text-finance-muted">{description}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2.5 sm:gap-2">{actions}</div> : null}
       </header>
-      <div className={cx("px-4 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5 md:px-8 md:pb-7", bodyClassName)}>{children}</div>
+      <div className={cx("px-5 pb-6 pt-5 sm:px-7 sm:pb-7 sm:pt-6 md:px-9 md:pb-8", bodyClassName)}>{children}</div>
     </section>
   );
 }
@@ -69,10 +74,10 @@ function statToneClass(tone: StatCardProps["tone"]): string {
 
 export function StatCard({ label, value, hint, tone = "default" }: StatCardProps) {
   return (
-    <article className="rounded-xl border border-finance-border bg-finance-panel p-3.5 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(10,25,48,0.08)] sm:p-4">
-      <p className="text-[11px] uppercase tracking-[0.14em] text-finance-muted sm:text-xs">{label}</p>
-      <p className={cx("mt-1.5 text-lg font-semibold sm:mt-2 sm:text-xl", statToneClass(tone))}>{value}</p>
-      {hint ? <p className="mt-1 text-[11px] text-finance-muted sm:text-xs">{hint}</p> : null}
+    <article className="rounded-xl border border-finance-border bg-finance-panel p-5 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(10,25,48,0.08)] sm:p-6">
+      <p className="text-xs sm:text-sm font-medium text-finance-muted">{label}</p>
+      <p className={cx("mt-2 text-lg font-semibold sm:mt-2.5 sm:text-xl", statToneClass(tone))}>{value}</p>
+      {hint ? <p className="mt-1 text-xs text-finance-muted">{hint}</p> : null}
     </article>
   );
 }
@@ -125,7 +130,7 @@ type EmptyStateProps = {
 
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="rounded-xl border border-dashed border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
+    <div className="rounded-xl border border-dashed border-finance-border bg-finance-surface/70 p-4 sm:p-5">
       <p className="text-sm font-semibold text-finance-text">{title}</p>
       <p className="mt-1.5 text-sm text-finance-muted">{description}</p>
       {action ? <div className="mt-3.5">{action}</div> : null}
@@ -187,7 +192,7 @@ export function ChecklistCard({ title, detail, urgency, actionLabel }: Checklist
   const tone = urgency === "high" ? "critical" : urgency === "medium" ? "warning" : "neutral";
 
   return (
-    <article className="rounded-xl border border-finance-border bg-finance-panel p-3.5 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(10,25,48,0.08)] sm:p-4">
+    <article className="rounded-xl border border-finance-border bg-finance-surface/40 p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[auto] sm:p-5">
       <div className="flex items-start justify-between gap-3 sm:items-center">
         <p className="text-sm font-semibold leading-snug text-finance-text">{title}</p>
         <StatusBadge label={urgency} tone={tone} />

@@ -4,14 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { ArrowRight, UserRound } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function SiteHeader() {
   const pathname = usePathname();
   const isOnboarding = pathname.startsWith("/onboarding");
-  const isAppShell = pathname.startsWith("/dashboard") || pathname.startsWith("/learn");
+  const isAppShell = pathname.startsWith("/dashboard") || pathname.startsWith("/learn") || pathname.startsWith("/profile");
   const isDashboard = pathname.startsWith("/dashboard");
 
   const [scrolled, setScrolled] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthResolved, setIsAuthResolved] = useState(false);
+  const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 80);
@@ -21,6 +25,65 @@ export default function SiteHeader() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const supabase = (() => {
+      try {
+        return getSupabaseBrowserClient();
+      } catch {
+        return null;
+      }
+    })();
+
+    if (!supabase) {
+      if (mounted) {
+        setIsAuthenticated(false);
+        setSignedInEmail(null);
+        setIsAuthResolved(true);
+      }
+      return;
+    }
+
+    const supabaseClient = supabase;
+
+    async function syncCurrentUser() {
+      try {
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
+
+        if (mounted) {
+          setIsAuthenticated(Boolean(user));
+          setSignedInEmail(user?.email ?? null);
+        }
+      } finally {
+        if (mounted) {
+          setIsAuthResolved(true);
+        }
+      }
+    }
+
+    void syncCurrentUser();
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) {
+        return;
+      }
+
+      setIsAuthenticated(Boolean(session?.user));
+      setSignedInEmail(session?.user?.email ?? null);
+      setIsAuthResolved(true);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   /* ─── Onboarding Header ─── */
   if (isOnboarding) {
@@ -42,7 +105,7 @@ export default function SiteHeader() {
   }
 
   /* ─── Nav Items ─── */
-  const navItems = isDashboard
+  const baseNavItems = isDashboard
     ? [
         { label: "How It Works", href: "/#how-it-works" },
         { label: "Dashboard", href: "/dashboard" },
@@ -63,6 +126,10 @@ export default function SiteHeader() {
           { label: "Why Pravix", href: "#why-goals" },
           { label: "Contact", href: "#contact" },
         ];
+
+  const navItems = isAuthenticated && !baseNavItems.some((item) => item.href === "/profile")
+    ? [...baseNavItems, { label: "Profile", href: "/profile" }]
+    : baseNavItems;
 
   /* ─── Main header ─── */
   return (
@@ -89,11 +156,11 @@ export default function SiteHeader() {
 
           /* Border & shadow */
           border: scrolled
-            ? "1px solid rgba(43, 92, 255, 0.10)"
+            ? "1px solid rgba(15, 91, 82, 0.12)"
             : "1px solid rgba(0, 0, 0, 0.04)",
           borderTop: scrolled ? undefined : "none",
           boxShadow: scrolled
-            ? "0 8px 32px rgba(43, 92, 255, 0.08), 0 1px 3px rgba(0,0,0,0.04)"
+            ? "0 8px 28px rgba(15, 91, 82, 0.08), 0 1px 3px rgba(0,0,0,0.04)"
             : "0 1px 0 rgba(0, 0, 0, 0.04)",
 
           /* Layout */
@@ -127,7 +194,7 @@ export default function SiteHeader() {
           {/* Logo */}
           <Link
             href="/"
-            className="font-bold tracking-tight text-[#0a1930] hover:text-[#2b5cff] transition-colors duration-300"
+            className="font-bold tracking-tight text-[#1f2a24] hover:text-[#0f5b52] transition-colors duration-300"
             style={{
               fontSize: scrolled ? "18px" : "22px",
               transition: "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease",
@@ -148,7 +215,7 @@ export default function SiteHeader() {
                   style={{
                     fontSize: scrolled ? "13px" : "14px",
                     fontWeight: 500,
-                    color: isActive ? "#2b5cff" : "#5a6b8a",
+                    color: isActive ? "#0f5b52" : "#64726b",
                     letterSpacing: "0.01em",
                     transition: "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1), color 0.25s ease",
                   }}
@@ -156,7 +223,7 @@ export default function SiteHeader() {
                   {item.label}
                   {isActive && (
                     <span
-                      className="absolute left-1/2 -translate-x-1/2 rounded-full bg-[#2b5cff]"
+                      className="absolute left-1/2 -translate-x-1/2 rounded-full bg-[#0f5b52]"
                       style={{
                         bottom: "-6px",
                         height: "2px",
@@ -171,47 +238,94 @@ export default function SiteHeader() {
 
           {/* Right side: CTA */}
           <div className="flex items-center gap-2.5">
-            <Link
-              href="/login"
-              className="hidden sm:inline-flex items-center rounded-full border border-finance-border bg-white/80 text-finance-text font-semibold hover:bg-white"
-              style={{
-                fontSize: scrolled ? "12px" : "13px",
-                padding: scrolled ? "6px 12px" : "8px 14px",
-                transition: "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1), padding 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
-              }}
-            >
-              Login
-            </Link>
+            {!isAuthResolved ? (
+              <span className="inline-flex h-8 w-8 animate-pulse items-center justify-center rounded-full border border-finance-border bg-finance-surface text-finance-muted">
+                <UserRound className="h-3.5 w-3.5" />
+              </span>
+            ) : isAuthenticated ? (
+              <>
+                <Link
+                  href="/onboarding"
+                  className="hidden sm:flex items-center gap-2 text-white font-semibold rounded-full overflow-hidden relative group"
+                  style={{
+                    background: "#0f5b52",
+                    padding: scrolled ? "7px 18px" : "9px 22px",
+                    fontSize: scrolled ? "12px" : "13px",
+                    boxShadow: "0 4px 14px rgba(15, 91, 82, 0.24)",
+                    transition: [
+                      "padding 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+                      "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+                      "box-shadow 0.3s ease",
+                      "transform 0.25s ease",
+                    ].join(", "),
+                  }}
+                >
+                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    Get Guidance
+                    <ArrowRight
+                      className="transition-transform duration-300 group-hover:translate-x-0.5"
+                      style={{ width: scrolled ? "14px" : "16px", height: scrolled ? "14px" : "16px" }}
+                    />
+                  </span>
+                </Link>
+                <Link
+                  href="/profile"
+                  aria-label={signedInEmail ? `Open profile for ${signedInEmail}` : "Open profile"}
+                  title={signedInEmail ?? "Profile"}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-finance-border bg-finance-surface text-finance-muted hover:text-finance-text"
+                >
+                  <UserRound className="h-3.5 w-3.5" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden sm:inline-flex items-center rounded-full border border-finance-border bg-white/80 text-finance-text font-semibold hover:bg-white"
+                  style={{
+                    fontSize: scrolled ? "12px" : "13px",
+                    padding: scrolled ? "6px 12px" : "8px 14px",
+                    transition: "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1), padding 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
+                  Login
+                </Link>
 
-            <Link
-              href="/onboarding"
-              className="hidden sm:flex items-center gap-2 text-white font-semibold rounded-full overflow-hidden relative group"
-              style={{
-                background: "linear-gradient(135deg, #4066ff 0%, #2b5cff 50%, #1a4bef 100%)",
-                padding: scrolled ? "7px 18px" : "9px 22px",
-                fontSize: scrolled ? "12px" : "13px",
-                boxShadow: "0 4px 16px rgba(43, 92, 255, 0.30)",
-                transition: [
-                  "padding 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
-                  "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
-                  "box-shadow 0.3s ease",
-                  "transform 0.25s ease",
-                ].join(", "),
-              }}
-            >
-              <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="relative z-10 flex items-center gap-1.5">
-                Get Guidance
-                <ArrowRight
-                  className="transition-transform duration-300 group-hover:translate-x-0.5"
-                  style={{ width: scrolled ? "14px" : "16px", height: scrolled ? "14px" : "16px" }}
-                />
-              </span>
-            </Link>
-            {isAppShell && (
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-finance-border bg-finance-surface text-finance-muted">
-                <UserRound className="w-3.5 h-3.5" />
-              </span>
+                <Link
+                  href="/onboarding"
+                  className="hidden sm:flex items-center gap-2 text-white font-semibold rounded-full overflow-hidden relative group"
+                  style={{
+                    background: "#0f5b52",
+                    padding: scrolled ? "7px 18px" : "9px 22px",
+                    fontSize: scrolled ? "12px" : "13px",
+                    boxShadow: "0 4px 14px rgba(15, 91, 82, 0.24)",
+                    transition: [
+                      "padding 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+                      "font-size 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+                      "box-shadow 0.3s ease",
+                      "transform 0.25s ease",
+                    ].join(", "),
+                  }}
+                >
+                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    Get Guidance
+                    <ArrowRight
+                      className="transition-transform duration-300 group-hover:translate-x-0.5"
+                      style={{ width: scrolled ? "14px" : "16px", height: scrolled ? "14px" : "16px" }}
+                    />
+                  </span>
+                </Link>
+
+                <Link
+                  href="/login"
+                  aria-label="Open login"
+                  className="inline-flex sm:hidden h-8 w-8 items-center justify-center rounded-full border border-finance-border bg-finance-surface text-finance-muted hover:text-finance-text"
+                >
+                  <UserRound className="h-3.5 w-3.5" />
+                </Link>
+              </>
             )}
           </div>
         </div>
@@ -231,7 +345,7 @@ export default function SiteHeader() {
           width: 16px;
           height: 2px;
           border-radius: 9999px;
-          background: #2b5cff;
+          background: #0f5b52;
           transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .navlink-hover:hover::after {

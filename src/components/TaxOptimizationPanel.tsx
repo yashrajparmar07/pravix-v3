@@ -46,11 +46,11 @@ function formatRegime(regime: "old" | "new" | null): string {
 
 function getUrgencyClass(urgency: "low" | "medium" | "high") {
   if (urgency === "high") {
-    return "border-finance-red/35 bg-finance-red/10 text-finance-red";
+    return "border-finance-red/20 bg-finance-red/5 text-finance-red";
   }
 
   if (urgency === "medium") {
-    return "border-amber-300/40 bg-amber-100/60 text-amber-800";
+    return "border-amber-300/20 bg-amber-100/30 text-amber-800";
   }
 
   return "border-finance-border bg-finance-surface text-finance-text";
@@ -208,14 +208,14 @@ export default function TaxOptimizationPanel({ refreshKey }: TaxOptimizationPane
             />
           </section>
 
-          <div className="mt-4 rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:mt-5 sm:p-4">
+          <div className="mt-4 rounded-xl border border-finance-border bg-finance-surface/60 p-4 sm:mt-5 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">Section 80C Progress</p>
               <StatusBadge label={`${Math.round(utilizationPct)}% utilized`} tone={utilizationPct >= 90 ? "success" : "warning"} />
             </div>
             <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-finance-border-soft">
               <div
-                className="h-full rounded-full bg-finance-accent transition-[width] duration-500 ease-out"
+                className="h-full rounded-full bg-[linear-gradient(90deg,#0f5b52_0%,#2f6f57_55%,#b38a4a_100%)] transition-[width] duration-500 ease-out"
                 style={{ width: `${utilizationPct}%` }}
                 aria-label="80C utilization progress"
               />
@@ -225,7 +225,7 @@ export default function TaxOptimizationPanel({ refreshKey }: TaxOptimizationPane
             </p>
           </div>
 
-          <div className="mt-4 rounded-xl border border-finance-accent/25 bg-finance-accent/10 p-3.5 sm:p-4">
+          <div className="mt-4 rounded-xl border border-finance-accent/25 bg-finance-accent/10 p-4 sm:p-5">
             <div className="flex items-start gap-2">
               <Calculator className="mt-0.5 h-4 w-4 text-finance-accent" />
               <div>
@@ -233,7 +233,7 @@ export default function TaxOptimizationPanel({ refreshKey }: TaxOptimizationPane
                   <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">Old vs New Regime Hint</p>
                   <StatusBadge label={`confidence ${summary.regimeHint.confidence}`} tone={confidenceTone(summary.regimeHint.confidence)} />
                 </div>
-                <p className="mt-1 text-sm font-semibold text-finance-text">{summary.regimeHint.message}</p>
+                <p className="mt-1 text-sm font-medium text-finance-text">{summary.regimeHint.message}</p>
                 <p className="mt-1 text-xs text-finance-muted">
                   Current: {formatRegime(summary.regimeHint.currentRegime)} | Suggested: {formatRegime(summary.regimeHint.suggestedRegime)}
                 </p>

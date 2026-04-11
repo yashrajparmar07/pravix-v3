@@ -92,14 +92,85 @@ function formatDateTime(value: string | null): string {
 
 function getSeverityClassName(severity: SmartAlertItem["severity"]): string {
   if (severity === "high") {
-    return "border-finance-red/35 bg-finance-red/10 text-finance-red";
+    return "border-finance-border border-l-4 border-l-finance-red bg-white text-finance-text";
   }
 
   if (severity === "medium") {
-    return "border-amber-300/40 bg-amber-100/60 text-amber-800";
+    return "border-finance-border border-l-4 border-l-amber-500 bg-white text-finance-text";
   }
 
-  return "border-finance-border bg-finance-surface text-finance-text";
+  return "border-finance-border border-l-4 border-l-finance-accent bg-white text-finance-text";
+}
+
+function formatMetric(metricLabel: string | null, metricValue: number | null): string {
+  const normalizedLabel = metricLabel
+    ? metricLabel
+        .replace(/[_-]+/g, " ")
+        .replace(/\bpct\b/gi, "percent")
+        .replace(/\binr\b/gi, "INR")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+    : "Signal";
+
+  if (metricValue === null) {
+    return normalizedLabel;
+  }
+
+  const isPercentMetric = /pct|percent/i.test(metricLabel ?? "");
+  const formattedValue = Number(metricValue).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  });
+
+  return `${normalizedLabel} • ${isPercentMetric ? `${formattedValue}%` : formattedValue}`;
+}
+
+function formatModeLabel(modeValue: string | null): string {
+  if (!modeValue) {
+    return "On-demand check";
+  }
+
+  if (modeValue === "user-daily") {
+    return "Daily automation";
+  }
+
+  if (modeValue === "evaluate") {
+    return "On-demand check";
+  }
+
+  return "Smart evaluation";
+}
+
+function routeStatusLabel(status: SmartAlertItem["routeStatus"]): string {
+  if (status === "ready") {
+    return "ready to notify";
+  }
+
+  if (status === "deferred") {
+    return "scheduled for later";
+  }
+
+  if (status === "blocked") {
+    return "needs your action";
+  }
+
+  return "already handled";
+}
+
+function dispatchStatusLabel(status: SmartAlertItem["dispatchStatus"]): string {
+  if (status === "sent") {
+    return "sent";
+  }
+
+  if (status === "failed") {
+    return "delivery failed";
+  }
+
+  if (status === "skipped") {
+    return "not sent";
+  }
+
+  return "pending";
 }
 
 function getRouteTone(status: SmartAlertItem["routeStatus"]): BadgeTone {
@@ -309,15 +380,15 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
       <section className="mt-2 grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Triggered" value={summary.triggeredCount} />
         <StatCard label="Ready to Send" value={summary.readyCount} tone="positive" />
-        <StatCard label="Deferred" value={summary.deferredCount} tone="warning" />
-        <StatCard label="Blocked and Suppressed" value={summary.blockedCount + summary.suppressedCount} tone="critical" />
+        <StatCard label="Scheduled" value={summary.deferredCount} tone="warning" />
+        <StatCard label="Needs Review" value={summary.blockedCount + summary.suppressedCount} tone="critical" />
       </section>
 
       <section className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-2">
-        <article className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
+        <article className="rounded-xl border border-finance-border bg-finance-surface/60 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Automation Status</p>
-            <StatusBadge label={mode || "evaluate"} tone="info" />
+            <p className="text-xs font-semibold text-finance-text">Automation Status</p>
+            <p className="text-xs font-medium text-finance-muted">{formatModeLabel(mode)}</p>
           </div>
           <KeyValueGrid
             items={[
@@ -326,37 +397,44 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
             ]}
           />
           {subscription ? (
-            <div className="mt-3 rounded-lg border border-finance-border bg-white p-3 sm:p-3.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge label={`plan ${subscription.plan}`} tone="neutral" />
-                <StatusBadge label={`status ${subscription.status}`} tone="neutral" />
-                <StatusBadge
-                  label={subscription.canUseWhatsappChannel ? "whatsapp unlocked" : "whatsapp locked"}
-                  tone={subscription.canUseWhatsappChannel ? "success" : "warning"}
-                />
-              </div>
-              {!subscription.canUseWhatsappChannel ? (
-                <p className="mt-2 text-xs text-amber-700">
-                  {subscription.upgradeMessage ?? "Upgrade to unlock WhatsApp delivery."}
+            <div className="mt-3 rounded-lg border border-finance-border bg-white p-3.5 sm:p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-finance-muted">
+                  Plan: <span className="font-semibold capitalize text-finance-text">{subscription.plan}</span>
                 </p>
-              ) : null}
+                <p className="text-xs text-finance-muted">
+                  Status: <span className="font-semibold capitalize text-finance-text">{subscription.status}</span>
+                </p>
+              </div>
+
+              {subscription.canUseWhatsappChannel ? (
+                <p className="mt-2 text-xs text-finance-green">WhatsApp delivery is included in your plan.</p>
+              ) : (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-amber-700">
+                    {subscription.upgradeMessage ?? "Upgrade to unlock WhatsApp delivery."}
+                  </p>
+                  <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-800">
+                    Upgrade
+                  </span>
+                </div>
+              )}
             </div>
           ) : null}
         </article>
 
-        <article className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Recent Activity</p>
+        <article className="rounded-xl border border-finance-border bg-finance-surface/60 p-4 sm:p-5">
+          <p className="text-xs font-semibold text-finance-text">Recent Activity</p>
           {runHistory.length === 0 ? (
             <p className="mt-2 text-sm text-finance-muted">No activity yet. Run an evaluation to build a timeline.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {runHistory.map((item) => (
-                <div key={item.id} className="rounded-lg border border-finance-border bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(10,25,48,0.06)] sm:p-3.5">
+                <div key={item.id} className="rounded-lg border border-finance-border bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(10,25,48,0.06)] sm:p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-finance-text">{item.title}</p>
-                    <StatusBadge label={item.mode} tone="info" />
+                    <p className="text-xs font-medium text-finance-muted">{formatDateTime(item.timestamp)}</p>
                   </div>
-                  <p className="mt-1 text-xs text-finance-muted">{formatDateTime(item.timestamp)}</p>
                   <p className="mt-1 text-xs text-finance-muted">
                     Ready {item.summary.readyCount} · Deferred {item.summary.deferredCount} · Blocked {item.summary.blockedCount}
                   </p>
@@ -366,25 +444,6 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
           )}
         </article>
       </section>
-
-      {subscription && (
-        <div className="mt-3 rounded-lg border border-finance-border bg-finance-surface/70 p-3 text-xs sm:p-3.5">
-          <div className="flex flex-wrap items-center gap-2 text-finance-muted">
-            <span>
-              Plan: <span className="font-semibold uppercase text-finance-text">{subscription.plan}</span>
-            </span>
-            <span>
-              Status: <span className="font-semibold uppercase text-finance-text">{subscription.status}</span>
-            </span>
-          </div>
-
-          {subscription.canUseWhatsappChannel ? (
-            <p className="mt-2 text-finance-green">WhatsApp channel is unlocked for your subscription.</p>
-          ) : (
-            <p className="mt-2 text-amber-700">{subscription.upgradeMessage ?? "Upgrade to unlock WhatsApp channel."}</p>
-          )}
-        </div>
-      )}
 
       {isLoading ? (
         <div className="mt-5 flex items-center gap-2 text-sm text-finance-muted sm:mt-6">
@@ -403,7 +462,7 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
           {sortedAlerts.map((alert, index) => (
             <article
               key={`${alert.alertType}-${index}`}
-              className={`rounded-xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(10,25,48,0.08)] sm:p-4 ${getSeverityClassName(alert.severity)}`}
+              className={`rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(10,25,48,0.08)] sm:p-5 ${getSeverityClassName(alert.severity)}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -412,9 +471,9 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <StatusBadge label={alert.routeStatus} tone={getRouteTone(alert.routeStatus)} />
+                  <StatusBadge label={routeStatusLabel(alert.routeStatus)} tone={getRouteTone(alert.routeStatus)} />
                   {alert.dispatchStatus ? (
-                    <StatusBadge label={alert.dispatchStatus} tone={getDispatchTone(alert.dispatchStatus)} />
+                    <StatusBadge label={dispatchStatusLabel(alert.dispatchStatus)} tone={getDispatchTone(alert.dispatchStatus)} />
                   ) : null}
                 </div>
               </div>
@@ -428,8 +487,8 @@ export default function SmartAlertsPanel({ refreshKey }: SmartAlertsPanelProps) 
                     { label: "Channel", value: alert.channel ?? "none" },
                     { label: "Destination", value: alert.destination ?? "not available" },
                     {
-                      label: "Metric",
-                      value: alert.metricValue !== null ? `${alert.metricLabel ?? "n/a"} (${alert.metricValue})` : (alert.metricLabel ?? "n/a"),
+                      label: "Signal",
+                      value: formatMetric(alert.metricLabel, alert.metricValue),
                     },
                     { label: "Route note", value: alert.routeReason },
                     { label: "Provider", value: alert.dispatchProvider ?? "pending" },

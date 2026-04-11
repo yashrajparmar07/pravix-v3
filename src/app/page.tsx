@@ -1,20 +1,164 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Target, ShieldCheck, Compass, BarChart3 } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  Target,
+  ShieldCheck,
+  Compass,
+  BarChart3,
+  Globe2,
+  LineChart as LineChartIcon,
+  Sparkles,
+  BellRing,
+  Calculator,
+  MessageCircle,
+  CircleUserRound,
+  RefreshCcw,
+  Wallet,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import SiteHeader from "@/components/SiteHeader";
-import HeroPhoneMockup from "@/components/HeroPhoneMockup";
+
+type LiveChartPoint = {
+  label: string;
+  value: number;
+  avg: number;
+};
+
+type LiveFxPoint = {
+  label: string;
+  rate: number;
+  rolling: number;
+};
+
+type HomepageMarketPayload = {
+  ok?: boolean;
+  generatedAt?: string;
+  sentimentSource?: "live" | "fallback";
+  fxSource?: "live" | "fallback";
+  fearGreedTrend?: LiveChartPoint[];
+  usdInrTrend?: LiveFxPoint[];
+  error?: string;
+};
+
+const fallbackSentimentTrend: LiveChartPoint[] = [
+  { label: "Apr 01", value: 41, avg: 40 },
+  { label: "Apr 02", value: 43, avg: 41 },
+  { label: "Apr 03", value: 44, avg: 43 },
+  { label: "Apr 04", value: 46, avg: 44 },
+  { label: "Apr 05", value: 45, avg: 45 },
+  { label: "Apr 06", value: 47, avg: 46 },
+  { label: "Apr 07", value: 49, avg: 47 },
+  { label: "Apr 08", value: 50, avg: 49 },
+];
+
+const fallbackFxTrend: LiveFxPoint[] = [
+  { label: "Apr 01", rate: 83.09, rolling: 83.05 },
+  { label: "Apr 02", rate: 83.18, rolling: 83.11 },
+  { label: "Apr 03", rate: 83.24, rolling: 83.17 },
+  { label: "Apr 04", rate: 83.21, rolling: 83.21 },
+  { label: "Apr 05", rate: 83.31, rolling: 83.25 },
+  { label: "Apr 06", rate: 83.35, rolling: 83.29 },
+  { label: "Apr 07", rate: 83.27, rolling: 83.31 },
+  { label: "Apr 08", rate: 83.42, rolling: 83.35 },
+];
+
+const allocationMixData = [
+  { name: "Domestic Equity", value: 52 },
+  { name: "Debt & Bonds", value: 24 },
+  { name: "International Equity", value: 12 },
+  { name: "Gold", value: 7 },
+  { name: "Liquidity", value: 5 },
+];
+
+const moduleImpactData = [
+  { module: "Alerts", score: 88 },
+  { module: "Holdings", score: 93 },
+  { module: "Tax", score: 81 },
+  { module: "Profile", score: 76 },
+  { module: "Copilot", score: 90 },
+];
+
+const taxEfficiencyData = [
+  { quarter: "Q1", used: 28, potential: 40 },
+  { quarter: "Q2", used: 47, potential: 63 },
+  { quarter: "Q3", used: 71, potential: 84 },
+  { quarter: "Q4", used: 96, potential: 100 },
+];
+
+const allocationColors = ["#2f7a70", "#b38a4a", "#86a9a3", "#6fa39a", "#ece6d8"];
+
+const motionEase = [0.22, 1, 0.36, 1] as const;
+
+function createSectionReveal(isCompactMotion: boolean) {
+  return {
+    hidden: { opacity: 0, y: isCompactMotion ? 14 : 26 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: isCompactMotion ? 0.4 : 0.62,
+        ease: motionEase,
+      },
+    },
+  };
+}
+
+function createChartCardReveal(isCompactMotion: boolean) {
+  return {
+    hidden: { opacity: 0, y: isCompactMotion ? 12 : 24, scale: isCompactMotion ? 0.996 : 0.985 },
+    show: (delayOrder: number) => ({
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: isCompactMotion ? 0.38 : 0.56,
+        delay: (isCompactMotion ? 0.045 : 0.08) * delayOrder,
+        ease: motionEase,
+      },
+    }),
+  };
+}
+
+function createFeatureCardReveal(isCompactMotion: boolean) {
+  return {
+    hidden: { opacity: 0, y: isCompactMotion ? 10 : 16, scale: isCompactMotion ? 0.997 : 0.992 },
+    show: (delayOrder: number) => ({
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: isCompactMotion ? 0.34 : 0.48,
+        delay: (isCompactMotion ? 0.03 : 0.05) * delayOrder,
+        ease: motionEase,
+      },
+    }),
+  };
+}
 
 export default function Home() {
   const [isHeroReady, setIsHeroReady] = useState(false);
-  const [activeHeroBanner, setActiveHeroBanner] = useState(0);
-
-  const heroBanners = [
-    "/image/banner1%20(1).webp",
-    "/image/banner2%20(1).webp",
-    "/image/banner3%20(1).webp",
-  ];
+  const [liveMarket, setLiveMarket] = useState<HomepageMarketPayload | null>(null);
+  const [isLiveMarketLoading, setIsLiveMarketLoading] = useState(true);
+  const [isCompactMotion, setIsCompactMotion] = useState(false);
 
   useEffect(() => {
     // Shorter fallback since no video is loaded
@@ -28,21 +172,98 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const bannerTimer = window.setInterval(() => {
-      setActiveHeroBanner((prev) => (prev + 1) % heroBanners.length);
-    }, 4500);
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateMotionDensity = () => {
+      setIsCompactMotion(mediaQuery.matches);
+    };
+
+    updateMotionDensity();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateMotionDensity);
+
+      return () => {
+        mediaQuery.removeEventListener("change", updateMotionDensity);
+      };
+    }
+
+    mediaQuery.addListener(updateMotionDensity);
 
     return () => {
-      window.clearInterval(bannerTimer);
+      mediaQuery.removeListener(updateMotionDensity);
     };
-  }, [heroBanners.length]);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLiveMarket() {
+      setIsLiveMarketLoading(true);
+
+      try {
+        const response = await fetch("/api/market/homepage", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as HomepageMarketPayload;
+
+        if (!cancelled) {
+          if (response.ok && payload.ok) {
+            setLiveMarket(payload);
+          } else {
+            setLiveMarket(null);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setLiveMarket(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLiveMarketLoading(false);
+        }
+      }
+    }
+
+    void loadLiveMarket();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sentimentChartData = liveMarket?.fearGreedTrend?.length
+    ? liveMarket.fearGreedTrend
+    : fallbackSentimentTrend;
+
+  const fxChartData = liveMarket?.usdInrTrend?.length
+    ? liveMarket.usdInrTrend
+    : fallbackFxTrend;
+
+  const sentimentSourceLabel = liveMarket?.sentimentSource === "live"
+    ? "Live source: Alternative.me Fear & Greed Index"
+    : "Fallback mode: sentiment baseline";
+
+  const fxSourceLabel = liveMarket?.fxSource === "live"
+    ? "Live source: Frankfurter USD/INR"
+    : "Fallback mode: FX baseline";
+
+  const sectionReveal = useMemo(() => createSectionReveal(isCompactMotion), [isCompactMotion]);
+  const chartCardReveal = useMemo(() => createChartCardReveal(isCompactMotion), [isCompactMotion]);
+  const featureCardReveal = useMemo(() => createFeatureCardReveal(isCompactMotion), [isCompactMotion]);
+
+  const sectionViewport = { once: true, amount: isCompactMotion ? 0.12 : 0.22 };
+  const denseSectionViewport = { once: true, amount: isCompactMotion ? 0.1 : 0.2 };
+  const cardGridViewport = { once: true, amount: isCompactMotion ? 0.14 : 0.25 };
+  const narrativeViewport = { once: true, amount: isCompactMotion ? 0.18 : 0.35 };
 
   return (
     <>
       {!isHeroReady && (
         <div className="fixed inset-0 z-[120] bg-white flex items-center justify-center">
           <div className="text-center px-6">
-            <div className="mx-auto h-10 w-10 rounded-full border-2 border-gray-200 border-t-blue-600 animate-spin" />
+            <div className="mx-auto h-10 w-10 rounded-full border-2 border-gray-200 border-t-finance-accent animate-spin" />
             <p className="mt-4 text-sm uppercase tracking-[0.18em] text-gray-400">Loading Pravix Experience</p>
           </div>
         </div>
@@ -51,333 +272,692 @@ export default function Home() {
       <SiteHeader />
       <div className={`flex flex-col min-h-screen transition-opacity duration-700 ${isHeroReady ? "opacity-100" : "opacity-0"}`}>
         {/* HERO SECTION */}
-        <section className="relative overflow-hidden min-h-screen pt-24 pb-12 md:pt-28">
-          <div className="absolute inset-0">
-            {heroBanners.map((banner, index) => (
-              <div
-                key={banner}
-                className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[1600ms] ${
-                  activeHeroBanner === index ? "opacity-100" : "opacity-0"
-                }`}
-                style={{ backgroundImage: `url('${banner}')` }}
-              />
-            ))}
-            <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(5,16,37,0.68),rgba(5,16,37,0.5)_38%,rgba(255,255,255,0.12)_100%)]" />
-          </div>
+        <section className="relative overflow-hidden border-b border-finance-border/70 bg-finance-bg pt-24 pb-14 md:pt-28 md:pb-20">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(15,91,82,0.06),transparent_42%),radial-gradient(circle_at_82%_74%,rgba(179,138,74,0.08),transparent_48%)]" />
 
-          <div className="relative z-20 mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14 flex flex-col lg:flex-row items-center lg:items-center gap-12 lg:gap-6 min-h-[calc(100vh-7rem)]">
-            
-            {/* Left: Hero Content */}
-            <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left max-w-[38rem] relative z-20 w-full">
-
-              <div className="mb-8 flex w-full justify-center">
-                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-blue-50 shadow-sm">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00e0ff] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00e0ff]"></span>
-                  </span>
+          <div className="relative z-10 mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
+            <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
+              {/* Left: Life-outcome messaging */}
+              <div className="max-w-2xl text-center lg:text-left">
+                <p className="inline-flex items-center rounded-full border border-finance-border bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-finance-muted shadow-sm">
                   Wealth planning for every Indian
-                </div>
-              </div>
-
-              {/* Glassmorphism brand box — guaranteed fully centered content */}
-              <div className="relative mb-10 w-full rounded-[2rem] border border-white/20 bg-gradient-to-b from-white/15 to-white/5 p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl flex flex-col items-center justify-center overflow-hidden group">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.1),transparent_70%)]" />
-                <div className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 bg-[#00e0ff]/15 rounded-full blur-[80px]" />
-                
-                <div className="relative z-10 flex flex-col items-center justify-center w-full">
-                  <h1 className="flex flex-col items-center justify-center w-full text-center m-0">
-                    <span
-                      className="block text-[clamp(3.8rem,9vw,6.5rem)] leading-[0.85] tracking-[-0.04em] text-white drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)] font-extrabold w-full text-center"
-                      style={{ fontFamily: 'var(--font-brand)' }}
-                    >
-                      Pravix
-                    </span>
-                    <span className="mt-4 block text-[clamp(0.75rem,1.8vw,1.1rem)] font-bold uppercase tracking-[0.45em] text-[#00e0ff] drop-shadow-[0_2px_8px_rgba(0,224,255,0.3)] w-full text-center pl-1">
-                      Wealth Management
-                    </span>
-                  </h1>
-                  
-                  <div className="mt-8 h-px w-2/3 max-w-[240px] bg-gradient-to-r from-transparent via-[#00e0ff]/60 to-transparent" />
-                  
-                  <p className="mt-6 text-xs md:text-[13px] font-medium tracking-[0.05em] text-blue-50/90 max-w-sm text-center uppercase leading-relaxed">
-                    India&apos;s first goal-based AI wealth platform
-                  </p>
-                </div>
-              </div>
-
-              {/* Tagline Container centered to align with the Pravix headline box */}
-              <div className="w-full flex flex-col items-center text-center">
-                <h2 className="text-2xl md:text-[2rem] font-bold text-white mb-5 tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] leading-tight">
-                  Powered by{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4f8aff] to-[#00e0ff]">
-                    Smart AI Insights
-                  </span>
-                </h2>
-
-                <p className="text-blue-100/90 font-medium text-base md:text-lg max-w-lg mb-10 leading-[1.7] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-                  Share your goals and preferences, and Pravix will create a clear path to grow your wealth — simple, transparent, and built entirely for you.
                 </p>
 
-                {/* CTAs */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+                <h1 className="mt-6 text-balance text-[clamp(2.05rem,5.2vw,4.25rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-finance-text">
+                  Turn life goals into a clear wealth plan
+                </h1>
+
+                <p className="mt-5 max-w-xl text-pretty text-base leading-relaxed text-finance-muted md:text-lg">
+                  Plan goals, track investments, optimize taxes, and get timely AI guidance in one place.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                   <Link
                     href="/onboarding"
-                    className="group flex w-full sm:w-auto items-center justify-center gap-3 bg-gradient-to-r from-[#2b5cff] to-[#1e4bff] text-white hover:from-[#1e4bff] hover:to-[#0f3bf0] px-9 py-4.5 rounded-full text-base font-semibold transition-all shadow-[0_8px_25px_rgba(43,92,255,0.4)] hover:shadow-[0_12px_35px_rgba(43,92,255,0.6)] hover:-translate-y-0.5 border border-[#4f8aff]/30"
+                    className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-full bg-finance-accent px-7 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(15,91,82,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0c4a43]"
                   >
-                    Get Personalized AI Insight
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+                    Start Your Plan
+                    <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-1" />
                   </Link>
+
                   <Link
-                    href="/onboarding"
-                    className="group flex w-full sm:w-auto items-center justify-center gap-3 border-2 border-white/60 bg-transparent text-white hover:bg-white/10 px-9 py-4 rounded-full text-base font-semibold transition-all hover:-translate-y-0.5"
+                    href="/learn"
+                    className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-full border border-finance-border bg-white px-7 text-sm font-semibold text-finance-text transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2f7a70]/45 hover:bg-finance-surface"
                   >
-                    Talk to Expert
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+                    See How It Works
+                    <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-1" />
                   </Link>
+                </div>
+
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
+                  {[
+                    "Goal-based planning",
+                    "AI-assisted guidance",
+                    "Tax-aware investing",
+                    "Secure private profile",
+                  ].map((chip) => (
+                    <span
+                      key={chip}
+                      className="inline-flex items-center rounded-full border border-finance-border/80 bg-white px-3.5 py-2 text-xs font-medium text-finance-muted"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Premium simplified dashboard mockup */}
+              <div className="mx-auto w-full max-w-[32rem] lg:mx-0 lg:justify-self-end">
+                <div className="relative">
+                  <div className="pointer-events-none absolute -right-4 -top-4 h-[94%] w-[94%] rounded-[1.8rem] border border-[#2f7a70]/12 bg-white/60" />
+                  <div className="pointer-events-none absolute -left-4 bottom-4 h-[88%] w-[86%] rounded-[1.7rem] border border-[#b38a4a]/20 bg-[#f6f1e5]/70" />
+
+                  <div className="relative rounded-[1.9rem] border border-finance-border bg-white p-5 shadow-[0_26px_46px_rgba(18,37,33,0.14)] sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-finance-muted">Pravix Plan Snapshot</p>
+                      <span className="rounded-full bg-[#ecf4f2] px-3 py-1 text-[11px] font-semibold text-finance-accent">Today</span>
+                    </div>
+
+                    <div className="mt-5 space-y-3.5">
+                      <article className="rounded-2xl border border-finance-border bg-[#f9f7f1] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-finance-muted">Goal progress card</p>
+                        <div className="mt-2 flex items-end justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-finance-text">Home down payment</p>
+                            <p className="mt-1 text-xs text-finance-muted">INR 13.6L of INR 20L target</p>
+                          </div>
+                          <span className="text-sm font-semibold text-finance-accent">68%</span>
+                        </div>
+                        <div className="mt-3 h-2.5 rounded-full bg-[#dce6e3]">
+                          <div className="h-full w-[68%] rounded-full bg-finance-accent" />
+                        </div>
+                      </article>
+
+                      <article className="rounded-2xl border border-finance-border bg-white p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-finance-muted">Next action card</p>
+                        <p className="mt-2 text-sm font-semibold text-finance-text">Increase monthly SIP by INR 2,000</p>
+                        <p className="mt-1 text-xs text-finance-muted">Keeps your retirement goal on schedule by Q4.</p>
+                      </article>
+
+                      <article className="rounded-2xl border border-[#b38a4a]/30 bg-[#fbf8f0] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-finance-muted">Tax runway widget</p>
+                        <div className="mt-2 flex items-end justify-between">
+                          <p className="text-sm font-semibold text-finance-text">Section 80C headroom</p>
+                          <p className="text-sm font-semibold text-[#9a763b]">INR 42,000</p>
+                        </div>
+                        <div className="mt-3 h-2.5 rounded-full bg-[#eadfca]">
+                          <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-[#2f7a70] to-[#b38a4a]" />
+                        </div>
+                      </article>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-[#2f7a70]/30 bg-[#eef6f4] px-4 py-3 text-sm text-finance-text md:absolute md:-bottom-7 md:right-5 md:mt-0 md:max-w-[16rem] md:shadow-[0_14px_28px_rgba(15,91,82,0.15)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-finance-accent">AI recommendation bubble</p>
+                      <p className="mt-1.5 leading-relaxed">Shift your next SIP split to 55% equity, 35% debt, and 10% gold for smoother goal progress.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Right: Animated Phone Mockup */}
-            <div className="flex-1 flex justify-center lg:justify-end w-full max-w-md lg:max-w-lg">
-              <HeroPhoneMockup />
-            </div>
-
           </div>
         </section>
 
-        {/* SECTION 1: SOLID BLUE PLATFORM PREVIEW */}
-        <section id="insights" className="relative w-full z-30 bg-[#2b5cff] min-h-screen overflow-hidden text-white">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,224,255,0.15),transparent_40%)]" />
+        {/* SECTION 1: EXECUTIVE INTELLIGENCE LAYER */}
+        <motion.section
+          id="intelligence"
+          className="relative overflow-hidden bg-[#1c302c] py-24 text-white md:py-28"
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={sectionViewport}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(179,138,74,0.14),transparent_42%),radial-gradient(circle_at_88%_85%,rgba(15,91,82,0.24),transparent_48%)]" />
 
-          <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 py-20 md:px-10 lg:px-14">
-            <div className="w-full max-w-2xl lg:ml-auto">
-              <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#00e0ff]">Your Pravix AI Insights Are Based On</p>
-              <h3 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">Your Goals &amp; Financial Priorities</h3>
-              <p className="mt-4 text-base leading-relaxed text-blue-100 md:text-lg">
-                Every recommendation is shaped around what matters most to you.
+          <div className="relative mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
+            <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b38a4a]">Pravix Command Layer</p>
+                <h3 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">
+                  Premium intelligence, built for your family&apos;s next decade.
+                </h3>
+                <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#d8ddd1] md:text-lg">
+                  Pravix unifies market pulse, portfolio behavior, tax runway, and AI guidance into one decision surface so every financial move feels intentional, calm, and deeply personalized.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-white/20 bg-white/10 p-6 backdrop-blur-md sm:p-7">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b38a4a]">What Runs In Real Time</p>
+                <motion.div className="mt-4 space-y-3" initial="hidden" whileInView="show" viewport={narrativeViewport}>
+                  {[
+                    "Fear & Greed + USD/INR free market pulse",
+                    "Auto-prioritized dashboard focus ranking",
+                    "Smart alerts routing with delivery channels",
+                    "AI copilot recommendations with risk warnings",
+                  ].map((item, index) => (
+                    <motion.div
+                      key={item}
+                      className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm text-[#f1eee4]"
+                      variants={featureCardReveal}
+                      custom={index}
+                    >
+                      {item}
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            </div>
+
+            <motion.div className="mt-10 grid gap-4 md:grid-cols-3" initial="hidden" whileInView="show" viewport={cardGridViewport}>
+              {[
+                {
+                  icon: Sparkles,
+                  title: "Executive Intelligence",
+                  detail:
+                    "Applies relevance scoring across modules so you know where to act first every day.",
+                  metric: "Auto-focus ready",
+                },
+                {
+                  icon: BellRing,
+                  title: "Smart Alerts",
+                  detail:
+                    "Tracks crash, SIP, rebalance, and tax deadline signals with controlled routing logic.",
+                  metric: "Daily automation",
+                },
+                {
+                  icon: MessageCircle,
+                  title: "Pravix AI Copilot",
+                  detail:
+                    "Turns profile + goals + holdings + tax context into practical next steps you can execute.",
+                  metric: "Structured advice",
+                },
+              ].map((item, index) => (
+                <motion.article
+                  key={item.title}
+                  className="group rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:bg-white/14"
+                  variants={featureCardReveal}
+                  custom={index}
+                >
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/30 bg-white/10">
+                    <item.icon className="h-5 w-5 text-[#b38a4a]" />
+                  </div>
+                  <h4 className="mt-4 text-xl font-semibold text-white">{item.title}</h4>
+                  <p className="mt-2 text-sm leading-relaxed text-[#d8ddd1]">{item.detail}</p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#b38a4a]">{item.metric}</p>
+                </motion.article>
+              ))}
+            </motion.div>
+
+            <motion.div className="mt-10 grid gap-5 lg:grid-cols-3" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
+              <motion.article
+                className="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm lg:col-span-2"
+                variants={chartCardReveal}
+                custom={0}
+              >
+                <div className="flex items-center gap-2">
+                  <LineChartIcon className="h-4.5 w-4.5 text-[#b38a4a]" />
+                  <p className="text-sm font-semibold text-white">Fear &amp; Greed Trend</p>
+                </div>
+                <p className="mt-1 text-xs text-[#d8ddd1]">
+                  {isLiveMarketLoading ? "Loading live sentiment feed..." : sentimentSourceLabel}
+                </p>
+                <div className="mt-4 h-64">
+                  {isHeroReady ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sentimentChartData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="4 4" stroke="rgba(219,234,254,0.18)" />
+                        <XAxis dataKey="label" stroke="#c3cbc0" fontSize={12} />
+                        <YAxis stroke="#c3cbc0" fontSize={12} domain={[0, 100]} />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            `${Number(value ?? 0).toFixed(1)}`,
+                            name === "value" ? "Index" : "3D Avg",
+                          ]}
+                          contentStyle={{ backgroundColor: "#2b3b37", borderColor: "#62756f", borderRadius: "10px" }}
+                          labelStyle={{ color: "#ece6d8" }}
+                          itemStyle={{ color: "#f6f3eb" }}
+                        />
+                        <Line type="monotone" dataKey="value" stroke="#b38a4a" strokeWidth={2.8} dot={false} />
+                        <Line type="monotone" dataKey="avg" stroke="#86a9a3" strokeWidth={2} dot={false} strokeDasharray="6 3" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full animate-pulse rounded-2xl border border-white/20 bg-white/10" />
+                  )}
+                </div>
+              </motion.article>
+
+              <motion.article
+                className="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm"
+                variants={chartCardReveal}
+                custom={1}
+              >
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4.5 w-4.5 text-[#b38a4a]" />
+                  <p className="text-sm font-semibold text-white">Allocation Mix</p>
+                </div>
+                <p className="mt-1 text-xs text-[#d8ddd1]">A balanced goal-first structure with diversification controls</p>
+                <div className="mt-4 h-56">
+                  {isHeroReady ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={allocationMixData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={54}
+                          outerRadius={86}
+                          paddingAngle={3}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {allocationMixData.map((entry, index) => (
+                            <Cell key={entry.name} fill={allocationColors[index % allocationColors.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => [`${Number(value ?? 0).toFixed(1)}%`, "Weight"]}
+                          contentStyle={{ backgroundColor: "#2b3b37", borderColor: "#62756f", borderRadius: "10px" }}
+                          labelStyle={{ color: "#ece6d8" }}
+                          itemStyle={{ color: "#f6f3eb" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full animate-pulse rounded-2xl border border-white/20 bg-white/10" />
+                  )}
+                </div>
+                <div className="mt-2 grid grid-cols-1 gap-1.5">
+                  {allocationMixData.map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between text-xs text-[#d8ddd1]">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: allocationColors[index % allocationColors.length] }} />
+                        {item.name}
+                      </span>
+                      <span className="font-semibold text-white">{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.article>
+
+              <motion.article
+                className="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm lg:col-span-3"
+                variants={chartCardReveal}
+                custom={2}
+              >
+                <div className="flex items-center gap-2">
+                  <Globe2 className="h-4.5 w-4.5 text-[#b38a4a]" />
+                  <p className="text-sm font-semibold text-white">USD/INR Drift (Live)</p>
+                </div>
+                <p className="mt-1 text-xs text-[#d8ddd1]">
+                  {isLiveMarketLoading ? "Loading live FX feed..." : fxSourceLabel}
+                </p>
+                <div className="mt-4 h-56">
+                  {isHeroReady ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={fxChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="sipGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#b38a4a" stopOpacity={0.6} />
+                            <stop offset="95%" stopColor="#b38a4a" stopOpacity={0.06} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="4 4" stroke="rgba(219,234,254,0.18)" />
+                        <XAxis dataKey="label" stroke="#c3cbc0" fontSize={12} />
+                        <YAxis stroke="#c3cbc0" fontSize={12} tickFormatter={(value) => `${Number(value).toFixed(2)}`} />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            `${Number(value ?? 0).toFixed(3)}`,
+                            name === "rate" ? "USD/INR" : "3D Avg",
+                          ]}
+                          contentStyle={{ backgroundColor: "#2b3b37", borderColor: "#62756f", borderRadius: "10px" }}
+                          labelStyle={{ color: "#ece6d8" }}
+                          itemStyle={{ color: "#f6f3eb" }}
+                        />
+                        <Area type="monotone" dataKey="rolling" stroke="#86a9a3" fill="transparent" strokeDasharray="7 4" />
+                        <Area type="monotone" dataKey="rate" stroke="#b38a4a" fill="url(#sipGradient)" strokeWidth={2.5} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full animate-pulse rounded-2xl border border-white/20 bg-white/10" />
+                  )}
+                </div>
+              </motion.article>
+            </motion.div>
+          </div>
+        </motion.section>
+
+        {/* SECTION 2: DASHBOARD MODULES */}
+        <motion.section
+          id="platform"
+          className="bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe5_100%)] py-24 md:py-28"
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={denseSectionViewport}
+        >
+          <div className="mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f5b52]">Inside Your Dashboard</p>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#0a1930] md:text-5xl">
+                  Five coordinated modules. One wealth operating system.
+                </h2>
+              </div>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 self-start rounded-full border border-[#0f5b52]/25 bg-white px-5 py-2.5 text-sm font-semibold text-[#0f5b52] transition-colors hover:bg-[#f1eee4]"
+              >
+                Open Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <motion.div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
+              {[
+                {
+                  icon: BellRing,
+                  title: "Smart Alerts Panel",
+                  desc: "Proactive signal routing for market crash, SIP due, rebalance drift, and tax deadline conditions.",
+                  badge: "Risk Radar",
+                },
+                {
+                  icon: BarChart3,
+                  title: "Holdings Analyzer",
+                  desc: "Manual or CSV holdings ingestion, allocation analytics, sector exposure, and concentration warnings.",
+                  badge: "Portfolio Depth",
+                },
+                {
+                  icon: Calculator,
+                  title: "Tax Optimization Assistant",
+                  desc: "Tracks Section 80C progress, regime direction, and practical monthly tax actions before FY close.",
+                  badge: "Tax Clarity",
+                },
+                {
+                  icon: Sparkles,
+                  title: "Executive Intelligence",
+                  desc: "Merges free market APIs with your own context and recommends the highest-impact focus area.",
+                  badge: "Priority Engine",
+                },
+                {
+                  icon: MessageCircle,
+                  title: "AI Wealth Copilot",
+                  desc: "Conversational guidance with recommendation, reason, risk warning, and next action in every response.",
+                  badge: "Human + AI",
+                },
+                {
+                  icon: CircleUserRound,
+                  title: "Secure Profile Core",
+                  desc: "Authenticated sessions and user-scoped data access ensure your financial context stays private.",
+                  badge: "Trust Layer",
+                },
+              ].map((module, index) => (
+                <motion.article
+                  key={module.title}
+                  className="rounded-2xl border border-[#d7d0c1] bg-white p-6 shadow-[0_14px_34px_rgba(15,91,82,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-[#0f5b52]/30"
+                  variants={featureCardReveal}
+                  custom={index}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1eee4] text-[#0f5b52]">
+                      <module.icon className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-[#0f5b52]/20 bg-[#f1eee4] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0f5b52]">
+                      {module.badge}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-4 text-xl font-bold text-[#0a1930]">{module.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#50607d]">{module.desc}</p>
+                </motion.article>
+              ))}
+            </motion.div>
+
+            <motion.div className="mt-12 grid gap-5 lg:grid-cols-2" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
+              <motion.article
+                className="rounded-3xl border border-[#d7d0c1] bg-white p-6 shadow-[0_14px_34px_rgba(15,91,82,0.08)]"
+                variants={chartCardReveal}
+                custom={0}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4.5 w-4.5 text-[#0f5b52]" />
+                  <p className="text-sm font-semibold text-[#0a1930]">Module Impact Index</p>
+                </div>
+                <p className="mt-1 text-xs text-[#60739a]">How strongly each module contributes to monthly execution quality</p>
+                <div className="mt-4 h-64">
+                  {isHeroReady ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={moduleImpactData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e4ddd0" />
+                        <XAxis dataKey="module" stroke="#6f7d76" fontSize={12} />
+                        <YAxis stroke="#6f7d76" fontSize={12} />
+                        <Tooltip
+                          formatter={(value) => [`${Number(value ?? 0).toFixed(0)}/100`, "Impact"]}
+                          contentStyle={{ backgroundColor: "#fbf8f1", borderColor: "#cfc8bb", borderRadius: "10px" }}
+                          labelStyle={{ color: "#2d3b37" }}
+                          itemStyle={{ color: "#3f5b55" }}
+                        />
+                        <Bar dataKey="score" radius={[8, 8, 0, 0]} fill="#0f5b52" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full animate-pulse rounded-2xl border border-[#d7d0c1] bg-[#f2ede3]" />
+                  )}
+                </div>
+              </motion.article>
+
+              <motion.article
+                className="rounded-3xl border border-[#d7d0c1] bg-white p-6 shadow-[0_14px_34px_rgba(15,91,82,0.08)]"
+                variants={chartCardReveal}
+                custom={1}
+              >
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4.5 w-4.5 text-[#0f5b52]" />
+                  <p className="text-sm font-semibold text-[#0a1930]">Tax Efficiency Runway</p>
+                </div>
+                <p className="mt-1 text-xs text-[#60739a]">Quarterly progression of 80C utilization versus potential optimization path</p>
+                <div className="mt-4 h-64">
+                  {isHeroReady ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={taxEfficiencyData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e4ddd0" />
+                        <XAxis dataKey="quarter" stroke="#6f7d76" fontSize={12} />
+                        <YAxis stroke="#6f7d76" fontSize={12} tickFormatter={(value) => `${value}%`} />
+                        <Tooltip
+                          formatter={(value) => [`${Number(value ?? 0).toFixed(0)}%`, "Coverage"]}
+                          contentStyle={{ backgroundColor: "#fbf8f1", borderColor: "#cfc8bb", borderRadius: "10px" }}
+                          labelStyle={{ color: "#2d3b37" }}
+                          itemStyle={{ color: "#3f5b55" }}
+                        />
+                        <Line type="monotone" dataKey="potential" stroke="#86a9a3" strokeWidth={2} strokeDasharray="6 4" dot={false} />
+                        <Line type="monotone" dataKey="used" stroke="#0f5b52" strokeWidth={2.6} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full animate-pulse rounded-2xl border border-[#d7d0c1] bg-[#f2ede3]" />
+                  )}
+                </div>
+              </motion.article>
+            </motion.div>
+          </div>
+        </motion.section>
+
+        {/* SECTION 3: HUMAN JOURNEY + EMOTIONAL CONNECT */}
+        <motion.section
+          id="journey"
+          className="border-y border-finance-border/70 bg-white py-24 md:py-28"
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={denseSectionViewport}
+        >
+          <div className="mx-auto grid w-full max-w-7xl gap-12 px-6 md:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-14">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0f5b52]">A Guided Journey</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#0a1930] md:text-5xl">
+                From uncertainty to confidence, one step at a time.
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#50607d] md:text-lg">
+                Pravix combines onboarding precision, intelligent automation, and advisor-ready outputs so your plan feels both personal and professionally engineered.
               </p>
 
-              <div className="mt-10 space-y-6">
+              <motion.div className="mt-10 space-y-4" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
                 {[
                   {
-                    title: "Market Trends & Data Signals",
-                    detail: "Insights reflect current market movements and evolving patterns.",
+                    step: "01",
+                    title: "Complete smart onboarding",
+                    detail: "Capture goals, risk appetite, tax profile, and communication preferences in one guided flow.",
+                    icon: CircleUserRound,
                   },
                   {
-                    title: "Expert-Backed Analysis",
-                    detail: "Guidance informed by Pravix's investment professionals and research.",
+                    step: "02",
+                    title: "Get your intelligent baseline",
+                    detail: "Pravix generates your first focus map across alerts, holdings, tax, profile, and AI advisor.",
+                    icon: Target,
                   },
                   {
-                    title: "Global Economic Developments",
-                    detail: "Broader events that influence markets and long-term opportunities.",
+                    step: "03",
+                    title: "Execute monthly actions",
+                    detail: "Use alert routing, tax checklisting, and holdings diagnostics to stay consistent without noise.",
+                    icon: RefreshCcw,
                   },
-                ].map((item, i) => (
-                  <div key={i} className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-5 py-4">
-                    <div className="flex items-start gap-4">
-                      <span className="mt-1 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#00e0ff] text-xs font-bold text-[#2b5cff]">
-                        {i + 1}
-                      </span>
-                      <div>
-                        <h4 className="text-lg font-bold text-white">{item.title}</h4>
-                        <p className="mt-1 text-sm leading-relaxed text-blue-50 md:text-base">{item.detail}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Video showcase – left side */}
-            <div className="hidden lg:block absolute left-10 top-1/2 -translate-y-1/2 w-[500px] h-[600px]">
-                <div className="w-full h-full rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden group">
-                  {/* Frosted glass border glow */}
-                  <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/10 z-10" />
-                  <div className="pointer-events-none absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-[#00e0ff]/20 blur-[40px] z-0" />
-
-                  {/* Video */}
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+                  {
+                    step: "04",
+                    title: "Refine with expert and AI",
+                    detail: "Collaborate with Pravix advisors and Copilot to keep your strategy adaptive yet disciplined.",
+                    icon: Compass,
+                  },
+                ].map((item, index) => (
+                  <motion.article
+                    key={item.step}
+                    className="rounded-2xl border border-finance-border/70 bg-[#fbf8f1] p-5 sm:p-6"
+                    variants={featureCardReveal}
+                    custom={index}
                   >
-                    <source src="/video/pravix-sec2.mp4" type="video/mp4" />
-                  </video>
-
-                  {/* Bottom gradient overlay to blend with section */}
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#2b5cff]/60 to-transparent z-10 rounded-b-3xl" />
-                </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 2: LIGHT BACKGROUND WHY GOAL BASED INVESTING */}
-        <section id="why-goals" className="py-24 bg-[#f8fbff] border-y border-blue-100">
-          <div className="container mx-auto px-6 max-w-6xl">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#0a1930]">Why Goal-Based Investing?</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto font-medium">Investing without a goal is like driving without a destination. We align your money with the life you want to build.</p>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { icon: Target, title: "Clear Objectives", desc: "Whether it's a home, retirement, or travel, assigning a purpose to your money helps you stay disciplined." },
-                { icon: ShieldCheck, title: "Risk Alignment", desc: "Short-term goals mean lower risk. Long-term goals allow for higher growth potential. We balance it out." },
-                { icon: Compass, title: "Peace of Mind", desc: "Stop stressing over daily market swings. Focus on the long-term trajectory of your custom wealth plan." }
-              ].map((item, i) => (
-                 <div key={i} className="bg-white border border-blue-100 shadow-[0_12px_40px_rgba(43,92,255,0.06)] rounded-2xl p-8 hover:border-[#2b5cff]/30 transition-colors">
-                  <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center mb-6 border border-blue-100">
-                    <item.icon className="w-7 h-7 text-[#2b5cff]" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-3 text-[#0a1930]">{item.title}</h3>
-                  <p className="text-gray-600 leading-relaxed font-medium">{item.desc}</p>
-                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 3: SOLID BLUE HOW IT WORKS */}
-        <section id="how-it-works" className="py-32 bg-[#2b5cff] text-white">
-          <div className="container mx-auto px-6 max-w-5xl">
-            <div className="flex flex-col md:flex-row gap-16 items-center">
-              <div className="md:w-1/2">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">A human-centric approach to wealth.</h2>
-                <div className="space-y-8 mt-12">
-                  {[
-                    { step: "01", title: "Tell us about yourself", desc: "A simple 2-minute profile to understand your current standing." },
-                    { step: "02", title: "Set your milestones", desc: "Define what matters most. A house in 5 years? Retirement in 20?" },
-                    { step: "03", title: "Get a custom roadmap", desc: "We'll suggest the right mix of Equity, Debt, and alternatives." },
-                    { step: "04", title: "Consult an expert", desc: "Review your plan with a certified advisor to fine-tune it." }
-                  ].map((item, i) => (
-                    <div key={i} className="flex gap-6">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center text-white font-bold">{item.step}</div>
+                    <div className="flex items-start gap-4">
+                      <div className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#0f5b52] text-white">
+                        <item.icon className="h-5 w-5" />
+                      </div>
                       <div>
-                        <h4 className="text-xl font-bold mb-1 text-white">{item.title}</h4>
-                        <p className="text-blue-100 font-medium">{item.desc}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0f5b52]">Step {item.step}</p>
+                        <h3 className="mt-1 text-lg font-bold text-[#0a1930]">{item.title}</h3>
+                        <p className="mt-1.5 text-sm leading-relaxed text-[#586987]">{item.detail}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="md:w-1/2 w-full p-8 bg-white text-[#0a1930] shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-3xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#00e0ff]/10 blur-[60px]" />
-                <div className="relative z-10 space-y-5">
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-5 mb-6">
-                    <div className="flex items-center gap-3">
-                      <BarChart3 className="w-6 h-6 text-[#2b5cff]" />
-                      <span className="font-bold text-lg">Sample Allocation</span>
+                  </motion.article>
+                ))}
+              </motion.div>
+            </div>
+
+            <div className="rounded-3xl border border-[#d8e7ff] bg-[linear-gradient(160deg,#1d3a35_0%,#24584f_58%,#0f5b52_100%)] p-8 text-white shadow-[0_24px_56px_rgba(10,25,48,0.24)] sm:p-10">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#b38a4a]">Why Families Choose Pravix</p>
+              <h3 className="mt-4 text-2xl font-bold leading-tight sm:text-3xl">
+                Not just better returns.
+                <br />
+                Better financial behavior.
+              </h3>
+
+              <motion.div className="mt-7 space-y-5" initial="hidden" whileInView="show" viewport={cardGridViewport}>
+                {[
+                  {
+                    icon: ShieldCheck,
+                    title: "Disciplined decisioning",
+                    detail: "Priority scoring and checklist-driven execution reduce emotional investing mistakes.",
+                  },
+                  {
+                    icon: Sparkles,
+                    title: "Transparent intelligence",
+                    detail: "Every suggestion surfaces why it matters, risk implications, and what to do next.",
+                  },
+                  {
+                    icon: BellRing,
+                    title: "Timely interventions",
+                    detail: "Automated nudges keep goals on track before missed SIPs, drifts, or tax gaps become expensive.",
+                  },
+                ].map((point, index) => (
+                  <motion.div
+                    key={point.title}
+                    className="rounded-2xl border border-white/20 bg-white/10 px-4 py-4 backdrop-blur-sm"
+                    variants={featureCardReveal}
+                    custom={index}
+                  >
+                    <div className="flex items-start gap-3">
+                      <point.icon className="mt-0.5 h-5 w-5 text-[#b38a4a]" />
+                      <div>
+                        <p className="text-base font-semibold text-white">{point.title}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-[#d8ddd1]">{point.detail}</p>
+                      </div>
                     </div>
-                    <span className="text-xs font-bold text-[#00e0ff] bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">Goal: Retirement</span>
-                  </div>
-                  {[
-                    { label: "Domestic Equity", val: "65%", color: "bg-[#2b5cff]" },
-                    { label: "Debt & Bonds", val: "25%", color: "bg-[#00e0ff]" },
-                    { label: "Gold / Commodities", val: "10%", color: "bg-blue-200" }
-                  ].map((row, i) => (
-                    <div key={i} className="space-y-2">
-                       <div className="flex justify-between text-sm font-semibold">
-                         <span className="text-gray-600">{row.label}</span>
-                         <span className="text-[#0a1930]">{row.val}</span>
-                       </div>
-                       <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                         <div className={`h-full ${row.color} rounded-full`} style={{ width: row.val }} />
-                       </div>
-                    </div>
-                  ))}
-                </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <div className="mt-8 rounded-2xl border border-white/25 bg-white/10 px-4 py-3.5 text-sm text-[#f1eee4]">
+                Pravix is designed to make wealth planning feel calm, clear, and confident even during uncertain markets.
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        {/* SECTION 4: LIGHT BACKGROUND BLOGS */}
-        <section id="blogs" className="py-24 border-b border-gray-100 bg-white">
-          <div className="container mx-auto px-6 max-w-6xl">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#2b5cff]">Insights Library</p>
-                <h2 className="mt-3 text-3xl md:text-4xl font-bold tracking-tight text-[#0a1930]">Latest from Pravix Blogs</h2>
-                <p className="mt-3 text-gray-600 max-w-2xl font-medium">
-                  Practical market explainers, goal-planning playbooks, and expert perspectives to help you make better investment decisions.
-                </p>
-              </div>
-              <Link
-                href="#"
-                className="inline-flex items-center gap-2 text-[#2b5cff] font-bold hover:text-blue-800 transition-colors"
-              >
-                View all blogs
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
+        {/* SECTION 4: TRUST + LEARN + PREMIUM CTA */}
+        <motion.section
+          id="trust"
+          className="relative overflow-hidden bg-[#1a2a26] py-24 text-white md:py-28"
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={denseSectionViewport}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(179,138,74,0.12),transparent_40%)]" />
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="relative mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
+            <motion.div className="grid gap-6 md:grid-cols-3" initial="hidden" whileInView="show" viewport={denseSectionViewport}>
               {[
                 {
-                  category: "Goal Planning",
-                  title: "How to Build a 10-Year Wealth Plan Around Life Milestones",
-                  excerpt: "A simple framework to map your goals, estimate required corpus, and align monthly investing with timelines.",
-                  meta: "6 min read",
+                  title: "Secure by design",
+                  desc: "Authenticated sessions with user-scoped access and robust backend enforcement for profile privacy.",
                 },
                 {
-                  category: "Market Signals",
-                  title: "What Market Volatility Means for Long-Term Investors",
-                  excerpt: "Understand corrections, cycles, and how data-driven allocation can reduce emotional decision-making.",
-                  meta: "5 min read",
+                  title: "Built for execution",
+                  desc: "From onboarding to alert delivery, every surface is action-oriented, not just informational.",
                 },
                 {
-                  category: "Expert Guidance",
-                  title: "When Should You Rebalance Your Portfolio?",
-                  excerpt: "Learn the right triggers for rebalancing and how professionals maintain risk discipline over time.",
-                  meta: "7 min read",
+                  title: "Continuous learning",
+                  desc: "Use the Learn section and advisor context to improve decisions month after month.",
                 },
-              ].map((post, i) => (
-                <article
-                  key={i}
-                  className="group rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:shadow-[0_12px_40px_rgba(43,92,255,0.08)] hover:-translate-y-1 transition-all"
+              ].map((item, index) => (
+                <motion.article
+                  key={item.title}
+                  className="rounded-2xl border border-white/15 bg-white/8 p-5 backdrop-blur-sm"
+                  variants={featureCardReveal}
+                  custom={index}
                 >
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#00e0ff]">{post.category}</p>
-                  <h3 className="mt-3 text-xl font-bold text-[#0a1930] leading-snug">{post.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-gray-600 font-medium">{post.excerpt}</p>
-                  <div className="mt-6 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-400">{post.meta}</span>
-                    <Link href="#" className="inline-flex items-center gap-1 text-sm font-bold text-[#2b5cff] group-hover:text-blue-800 transition-colors">
-                      Read article
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </article>
+                  <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#d8ddd1]">{item.desc}</p>
+                </motion.article>
               ))}
-            </div>
-          </div>
-        </section>
+            </motion.div>
 
-        {/* BOTTOM CTA: DARK BACKGROUND */}
-        <section className="py-24 bg-[#0a1220]">
-          <div className="container mx-auto px-6 max-w-5xl text-center">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6">
-              Start Building Your Wealth Plan Today
-            </h2>
-            <p className="text-lg md:text-xl font-medium text-gray-400 mb-10">
-              Get your personalized insights in minutes.
-            </p>
-            <div className="flex justify-center">
-              <Link
-                href="/onboarding"
-                className="group inline-flex items-center justify-center gap-2 bg-[#2b5cff] text-white hover:bg-blue-600 px-10 py-5 rounded-full text-base font-bold transition-all shadow-[0_8px_25px_rgba(43,92,255,0.4)]"
-              >
-                Get Personalized AI Insights
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
+            <div className="mt-14 rounded-3xl border border-[#40635d] bg-[linear-gradient(135deg,#1a322d_0%,#255449_58%,#0f5b52_100%)] p-8 shadow-[0_24px_58px_rgba(0,0,0,0.28)] sm:p-10 md:p-12">
+              <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#b38a4a]">Ready To Experience Pravix</p>
+                  <h2 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+                    Give your money a strategy that feels premium, personal, and practical.
+                  </h2>
+                  <p className="mt-4 text-base leading-relaxed text-[#d8ddd1] md:text-lg">
+                    Start with guided onboarding, unlock your executive dashboard, and let Pravix AI keep you one step ahead.
+                  </p>
+                </div>
+
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-[17rem]">
+                  <Link
+                    href="/onboarding"
+                    className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-[#255449] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)]"
+                  >
+                    Start Onboarding
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex h-12 items-center justify-center rounded-full border border-white/40 bg-white/10 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                  >
+                    Open Dashboard
+                  </Link>
+                  <Link
+                    href="/learn"
+                    className="inline-flex h-12 items-center justify-center rounded-full border border-white/25 bg-transparent px-6 text-sm font-semibold text-[#d8ddd1] transition-colors hover:bg-white/10"
+                  >
+                    Explore Learn Center
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
       </div>
     </>
   );
 }
+
+

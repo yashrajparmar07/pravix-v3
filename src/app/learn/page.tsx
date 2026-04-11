@@ -51,7 +51,7 @@ export default function LearnPage() {
               {journeySteps.map((step, idx) => (
                 <article key={step.title} className="grid md:grid-cols-2 gap-6 items-center">
                   <div className={idx % 2 === 0 ? "md:order-1" : "md:order-2"}>
-                    <div className="rounded-2xl border border-finance-border/70 bg-[linear-gradient(145deg,rgba(28,33,52,0.88),rgba(17,22,38,0.84))] p-6">
+                    <div className="rounded-2xl border border-finance-border/70 bg-finance-panel p-6">
                       <p className="text-[11px] uppercase tracking-[0.16em] text-finance-green">{step.label}</p>
                       <h2 className="mt-2 text-3xl font-semibold text-finance-text">{step.title}</h2>
                       <p className="mt-3 text-finance-muted leading-relaxed">{step.body}</p>
@@ -79,11 +79,11 @@ export default function LearnPage() {
             </div>
           </section>
 
-          <section className="mt-16 rounded-2xl border border-finance-border/70 bg-[linear-gradient(145deg,rgba(30,35,56,0.9),rgba(18,22,36,0.88))] p-8 text-center">
+          <section className="mt-16 rounded-2xl border border-finance-border/70 bg-finance-panel p-8 text-center">
             <h2 className="text-4xl font-semibold text-finance-text">Ready to secure your legacy?</h2>
             <p className="mt-3 text-finance-muted">Join investors moving from uncertainty to disciplined wealth creation.</p>
             <div className="mt-7 flex flex-wrap justify-center gap-4">
-              <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(180deg,#9EA0FF,#7E82F8)] px-6 py-3 text-[#090c19] font-semibold shadow-[0_10px_24px_rgba(126,130,248,0.35)]">
+              <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-lg bg-finance-accent px-6 py-3 text-white font-semibold shadow-[0_8px_20px_rgba(15,91,82,0.22)] hover:brightness-95">
                 Get Started Now
                 <ArrowRight className="w-4 h-4" />
               </Link>

@@ -6,8 +6,6 @@ import {
   AIInsightChips,
   DashboardSectionCard,
   EmptyState,
-  SectionActionBar,
-  StatusBadge,
 } from "@/components/dashboard/DashboardPrimitives";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -41,12 +39,6 @@ type AgentChatResponse = {
 
 type AgentAdvisorPanelProps = {
   refreshKey: number;
-};
-
-type DebugStatus = {
-  tokenPresent: boolean;
-  bootstrapLoaded: boolean;
-  chatReady: boolean;
 };
 
 function toStructuredField(value: unknown): string | null {
@@ -90,11 +82,6 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
   const [dashboardSummary, setDashboardSummary] = useState<string | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [debugStatus, setDebugStatus] = useState<DebugStatus>({
-    tokenPresent: false,
-    bootstrapLoaded: false,
-    chatReady: false,
-  });
 
   const getAccessToken = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -106,11 +93,8 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
 
     const token = data.session?.access_token;
     if (!token) {
-      setDebugStatus((previous) => ({ ...previous, tokenPresent: false }));
       throw new Error("Authentication session expired. Please sign in again.");
     }
-
-    setDebugStatus((previous) => ({ ...previous, tokenPresent: true }));
 
     return token;
   }, []);
@@ -147,7 +131,6 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
     async function loadAgent() {
       setIsLoading(true);
       setError(null);
-      setDebugStatus((previous) => ({ ...previous, bootstrapLoaded: false, chatReady: false }));
 
       try {
         const [bootstrap, dashboard] = await Promise.all([
@@ -162,14 +145,12 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
         setGreeting(bootstrap.greeting);
         setStarterPrompts(bootstrap.starterPrompts ?? []);
         setDashboardSummary(dashboard.aiSummary ?? null);
-        setDebugStatus((previous) => ({ ...previous, bootstrapLoaded: true, chatReady: true }));
       } catch (loadError) {
         if (cancelled) {
           return;
         }
 
         setError(loadError instanceof Error ? loadError.message : "Could not load AI advisor context.");
-        setDebugStatus((previous) => ({ ...previous, bootstrapLoaded: false, chatReady: false }));
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -218,10 +199,8 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
           sentAt: new Date().toISOString(),
         },
       ]);
-      setDebugStatus((previous) => ({ ...previous, chatReady: true }));
     } catch (chatError) {
       setError(chatError instanceof Error ? chatError.message : "Could not send message to AI advisor.");
-      setDebugStatus((previous) => ({ ...previous, chatReady: false }));
     } finally {
       setIsSending(false);
     }
@@ -237,13 +216,6 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
       eyebrow="AI Wealth Advisor"
       title="Pravix Copilot"
       description={greeting}
-      actions={
-        <SectionActionBar>
-          <StatusBadge label={debugStatus.tokenPresent ? "session secure" : "session missing"} tone={debugStatus.tokenPresent ? "success" : "critical"} />
-          <StatusBadge label={debugStatus.bootstrapLoaded ? "context loaded" : "loading context"} tone={debugStatus.bootstrapLoaded ? "success" : "warning"} />
-          <StatusBadge label={debugStatus.chatReady ? "chat ready" : "chat blocked"} tone={debugStatus.chatReady ? "success" : "critical"} />
-        </SectionActionBar>
-      }
     >
 
       {isLoading && (
@@ -254,7 +226,7 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
       )}
 
       {!isLoading && dashboardSummary && (
-        <div className="mt-4 rounded-xl border border-finance-accent/20 bg-finance-accent/10 p-3.5 sm:p-4">
+        <div className="mt-4 rounded-2xl border border-finance-accent/20 bg-finance-accent/10 p-4 sm:p-5">
           <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">AI Action Plan</p>
           <p className="mt-2 whitespace-pre-wrap text-sm text-finance-text leading-relaxed">{dashboardSummary}</p>
         </div>
@@ -267,8 +239,8 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
         </div>
       )}
 
-      <div className="mt-4 rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:mt-5 sm:p-4">
-        <div className="max-h-72 space-y-2.5 overflow-y-auto pr-0.5 sm:space-y-3 sm:pr-1">
+      <div className="mt-4 rounded-2xl bg-finance-surface/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_12px_28px_rgba(10,25,48,0.06)] sm:mt-5 sm:p-5">
+        <div className="max-h-72 space-y-3 overflow-y-auto pr-0.5 sm:space-y-3.5 sm:pr-1">
           {messages.length === 0 ? (
             <EmptyState
               title="No messages yet"
@@ -280,8 +252,8 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
                 key={`${message.role}-${index}`}
                 className={`rounded-lg p-3 text-sm ${
                   message.role === "assistant"
-                    ? "border border-finance-border bg-white text-finance-text"
-                    : "bg-finance-accent text-white"
+                    ? "bg-white/95 text-finance-text shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_4px_14px_rgba(10,25,48,0.08)]"
+                    : "bg-finance-accent text-white shadow-[0_4px_14px_rgba(15,91,82,0.24)]"
                 }`}
               >
                 <p className={`text-[10px] uppercase tracking-[0.1em] ${message.role === "assistant" ? "text-finance-muted" : "text-white/80"}`}>
@@ -297,11 +269,11 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
                       <p className="text-[10px] uppercase tracking-[0.12em] text-finance-muted">Reason</p>
                       <p className="mt-1 text-sm leading-relaxed text-finance-text">{message.structured.reason}</p>
                     </div>
-                    <div className="rounded-md border border-finance-red/25 bg-finance-red/10 p-2.5">
+                    <div className="rounded-lg border border-finance-red/20 bg-finance-red/10 p-3">
                       <p className="text-[10px] uppercase tracking-[0.12em] text-finance-red">Risk Warning</p>
                       <p className="mt-1 text-sm leading-relaxed text-finance-red">{message.structured.riskWarning}</p>
                     </div>
-                    <div className="rounded-md border border-finance-accent/20 bg-finance-accent/10 p-2.5">
+                    <div className="rounded-lg border border-finance-accent/20 bg-finance-accent/10 p-3">
                       <p className="text-[10px] uppercase tracking-[0.12em] text-finance-accent">Next Action</p>
                       <p className="mt-1 text-sm leading-relaxed text-finance-text">{message.structured.nextAction}</p>
                     </div>
@@ -314,14 +286,14 @@ export default function AgentAdvisorPanel({ refreshKey }: AgentAdvisorPanelProps
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-3.5 flex items-center gap-2 sm:mt-4">
+        <form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2.5 sm:mt-5">
           <input
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             disabled={isSending}
             placeholder="Ask: Where should I invest 15000 INR per month?"
-            className="h-11 flex-1 rounded-lg border border-finance-border bg-white px-3 text-sm text-finance-text transition-colors focus:outline-none focus:ring-2 focus:ring-finance-accent/25"
+            className="h-11 flex-1 rounded-xl border border-transparent bg-white px-3.5 text-sm text-finance-text shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_2px_8px_rgba(10,25,48,0.05)] transition-colors focus:outline-none focus:ring-2 focus:ring-finance-accent/25"
           />
           <button
             type="submit"

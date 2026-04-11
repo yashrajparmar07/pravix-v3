@@ -362,6 +362,7 @@ export default function HoldingsAnalyzerPanel({ refreshKey, onHoldingsChanged }:
   const [success, setSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ManualFieldErrors>({});
   const [recentSymbols, setRecentSymbols] = useState<string[]>([]);
+  const [isManualFormOpen, setIsManualFormOpen] = useState(false);
 
   const getAccessToken = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -500,6 +501,7 @@ export default function HoldingsAnalyzerPanel({ refreshKey, onHoldingsChanged }:
         currentPriceInr: "",
       }));
       setFieldErrors({});
+      setIsManualFormOpen(false);
 
       onHoldingsChanged?.();
     } catch (submitError) {
@@ -590,126 +592,6 @@ export default function HoldingsAnalyzerPanel({ refreshKey, onHoldingsChanged }:
           </div>
         </div>
       )}
-
-      <div className="mt-4 grid gap-3 sm:gap-4 lg:grid-cols-2">
-        <form onSubmit={handleManualSubmit} className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Manual Entry</p>
-
-          <div className="mt-3 grid gap-2.5 sm:gap-3 md:grid-cols-2">
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-finance-muted">Symbol *</span>
-              <input
-                value={manual.symbol}
-                onChange={(event) => updateManualField("symbol", event.target.value)}
-                placeholder="RELIANCE"
-                className={inputClassName(Boolean(fieldErrors.symbol))}
-              />
-              {fieldErrors.symbol ? <span className="text-xs text-finance-red">{fieldErrors.symbol}</span> : null}
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-finance-muted">Instrument Name</span>
-              <input
-                value={manual.name}
-                onChange={(event) => updateManualField("name", event.target.value)}
-                placeholder="Optional"
-                className={inputClassName(Boolean(fieldErrors.name))}
-              />
-              {fieldErrors.name ? <span className="text-xs text-finance-red">{fieldErrors.name}</span> : null}
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-finance-muted">Asset Class *</span>
-              <input
-                value={manual.assetClass}
-                onChange={(event) => updateManualField("assetClass", event.target.value)}
-                placeholder="Equity"
-                className={inputClassName(Boolean(fieldErrors.assetClass))}
-              />
-              {fieldErrors.assetClass ? <span className="text-xs text-finance-red">{fieldErrors.assetClass}</span> : null}
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-finance-muted">Sector</span>
-              <input
-                value={manual.sector}
-                onChange={(event) => updateManualField("sector", event.target.value)}
-                placeholder="Optional"
-                className={inputClassName(Boolean(fieldErrors.sector))}
-              />
-              {fieldErrors.sector ? <span className="text-xs text-finance-red">{fieldErrors.sector}</span> : null}
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-finance-muted">Quantity *</span>
-              <input
-                type="number"
-                step="0.000001"
-                value={manual.quantity}
-                onChange={(event) => updateManualField("quantity", event.target.value)}
-                placeholder="100"
-                className={inputClassName(Boolean(fieldErrors.quantity))}
-              />
-              {fieldErrors.quantity ? <span className="text-xs text-finance-red">{fieldErrors.quantity}</span> : null}
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-finance-muted">Avg Buy Price (INR) *</span>
-              <input
-                type="number"
-                step="0.01"
-                value={manual.averageBuyPriceInr}
-                onChange={(event) => updateManualField("averageBuyPriceInr", event.target.value)}
-                placeholder="2450"
-                className={inputClassName(Boolean(fieldErrors.averageBuyPriceInr))}
-              />
-              {fieldErrors.averageBuyPriceInr ? <span className="text-xs text-finance-red">{fieldErrors.averageBuyPriceInr}</span> : null}
-            </label>
-
-            <label className="space-y-1 md:col-span-2">
-              <span className="text-xs font-medium text-finance-muted">Current Price (INR) *</span>
-              <input
-                type="number"
-                step="0.01"
-                value={manual.currentPriceInr}
-                onChange={(event) => updateManualField("currentPriceInr", event.target.value)}
-                placeholder="2550"
-                className={inputClassName(Boolean(fieldErrors.currentPriceInr))}
-              />
-              {fieldErrors.currentPriceInr ? <span className="text-xs text-finance-red">{fieldErrors.currentPriceInr}</span> : null}
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-finance-accent px-4 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Save Holding
-          </button>
-        </form>
-
-        <div className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">CSV Upload</p>
-          <p className="mt-2 text-sm text-finance-muted">
-            Expected columns: symbol,name,asset_class,sector,quantity,average_buy_price_inr,current_price_inr
-          </p>
-
-          <label className="mt-4 inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-finance-border bg-white px-4 text-sm font-semibold text-finance-text transition-all duration-150 hover:bg-finance-surface focus-within:outline-none focus-within:ring-2 focus-within:ring-finance-accent/30 active:scale-[0.98]">
-            <Upload className="h-4 w-4" />
-            Upload CSV
-            <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvUpload} disabled={isSubmitting} />
-          </label>
-
-          <p className="mt-3 text-xs text-finance-muted">
-            Duplicate symbols in the same upload are automatically merged using the latest row.
-          </p>
-          {recentSymbols.length > 0 ? (
-            <p className="mt-2 text-xs text-finance-muted">Recent symbols: {recentSymbols.slice(0, 8).join(", ")}</p>
-          ) : null}
-        </div>
-      </div>
 
       {isLoading ? (
         <div className="mt-5 flex items-center gap-2 text-sm text-finance-muted sm:mt-6">
@@ -809,7 +691,7 @@ export default function HoldingsAnalyzerPanel({ refreshKey, onHoldingsChanged }:
               <div className="mt-3">
                 <EmptyState
                   title="No holdings saved"
-                  description="Use manual entry or CSV upload above to build your first portfolio snapshot."
+                  description="Use manual entry or CSV upload below to build your first portfolio snapshot."
                 />
               </div>
             ) : (
@@ -855,6 +737,143 @@ export default function HoldingsAnalyzerPanel({ refreshKey, onHoldingsChanged }:
                 </table>
               </div>
             )}
+          </section>
+
+          <section className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Manual Entry</p>
+                <button
+                  type="button"
+                  onClick={() => setIsManualFormOpen((previous) => !previous)}
+                  className="inline-flex h-9 items-center rounded-full border border-finance-border bg-white px-3 text-xs font-semibold text-finance-text transition-all duration-150 hover:bg-finance-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/30 active:scale-[0.98]"
+                >
+                  {isManualFormOpen ? "Hide manual form" : "+ Add holding manually"}
+                </button>
+              </div>
+
+              {!isManualFormOpen ? (
+                <p className="mt-3 text-sm text-finance-muted">
+                  Keep portfolio insights in focus and open manual entry only when you need a one-off addition.
+                </p>
+              ) : (
+                <form onSubmit={handleManualSubmit} className="mt-3">
+                  <div className="grid gap-2.5 sm:gap-3 md:grid-cols-2">
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-finance-muted">Symbol *</span>
+                      <input
+                        value={manual.symbol}
+                        onChange={(event) => updateManualField("symbol", event.target.value)}
+                        placeholder="RELIANCE"
+                        className={inputClassName(Boolean(fieldErrors.symbol))}
+                      />
+                      {fieldErrors.symbol ? <span className="text-xs text-finance-red">{fieldErrors.symbol}</span> : null}
+                    </label>
+
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-finance-muted">Instrument Name</span>
+                      <input
+                        value={manual.name}
+                        onChange={(event) => updateManualField("name", event.target.value)}
+                        placeholder="Optional"
+                        className={inputClassName(Boolean(fieldErrors.name))}
+                      />
+                      {fieldErrors.name ? <span className="text-xs text-finance-red">{fieldErrors.name}</span> : null}
+                    </label>
+
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-finance-muted">Asset Class *</span>
+                      <input
+                        value={manual.assetClass}
+                        onChange={(event) => updateManualField("assetClass", event.target.value)}
+                        placeholder="Equity"
+                        className={inputClassName(Boolean(fieldErrors.assetClass))}
+                      />
+                      {fieldErrors.assetClass ? <span className="text-xs text-finance-red">{fieldErrors.assetClass}</span> : null}
+                    </label>
+
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-finance-muted">Sector</span>
+                      <input
+                        value={manual.sector}
+                        onChange={(event) => updateManualField("sector", event.target.value)}
+                        placeholder="Optional"
+                        className={inputClassName(Boolean(fieldErrors.sector))}
+                      />
+                      {fieldErrors.sector ? <span className="text-xs text-finance-red">{fieldErrors.sector}</span> : null}
+                    </label>
+
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-finance-muted">Quantity *</span>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={manual.quantity}
+                        onChange={(event) => updateManualField("quantity", event.target.value)}
+                        placeholder="100"
+                        className={inputClassName(Boolean(fieldErrors.quantity))}
+                      />
+                      {fieldErrors.quantity ? <span className="text-xs text-finance-red">{fieldErrors.quantity}</span> : null}
+                    </label>
+
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-finance-muted">Avg Buy Price (INR) *</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={manual.averageBuyPriceInr}
+                        onChange={(event) => updateManualField("averageBuyPriceInr", event.target.value)}
+                        placeholder="2450"
+                        className={inputClassName(Boolean(fieldErrors.averageBuyPriceInr))}
+                      />
+                      {fieldErrors.averageBuyPriceInr ? <span className="text-xs text-finance-red">{fieldErrors.averageBuyPriceInr}</span> : null}
+                    </label>
+
+                    <label className="space-y-1 md:col-span-2">
+                      <span className="text-xs font-medium text-finance-muted">Current Price (INR) *</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={manual.currentPriceInr}
+                        onChange={(event) => updateManualField("currentPriceInr", event.target.value)}
+                        placeholder="2550"
+                        className={inputClassName(Boolean(fieldErrors.currentPriceInr))}
+                      />
+                      {fieldErrors.currentPriceInr ? <span className="text-xs text-finance-red">{fieldErrors.currentPriceInr}</span> : null}
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-finance-accent px-4 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finance-accent/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Save Holding
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">CSV Upload</p>
+              <p className="mt-2 text-sm text-finance-muted">
+                Expected columns: symbol,name,asset_class,sector,quantity,average_buy_price_inr,current_price_inr
+              </p>
+
+              <label className="mt-4 inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-finance-border bg-white px-4 text-sm font-semibold text-finance-text transition-all duration-150 hover:bg-finance-surface focus-within:outline-none focus-within:ring-2 focus-within:ring-finance-accent/30 active:scale-[0.98]">
+                <Upload className="h-4 w-4" />
+                Upload CSV
+                <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvUpload} disabled={isSubmitting} />
+              </label>
+
+              <p className="mt-3 text-xs text-finance-muted">
+                Duplicate symbols in the same upload are automatically merged using the latest row.
+              </p>
+              {recentSymbols.length > 0 ? (
+                <p className="mt-2 text-xs text-finance-muted">Recent symbols: {recentSymbols.slice(0, 8).join(", ")}</p>
+              ) : null}
+            </div>
           </section>
         </div>
       )}

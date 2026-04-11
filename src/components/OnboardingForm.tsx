@@ -706,7 +706,7 @@ export default function OnboardingForm() {
   }
 
   return (
-    <section className="rounded-2xl border border-finance-border bg-finance-panel shadow-[0_20px_45px_rgba(43,92,255,0.08)] p-6 md:p-8">
+    <section className="rounded-2xl border border-finance-border bg-finance-panel shadow-[0_18px_36px_rgba(31,42,36,0.08)] p-6 md:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">Runtime Onboarding Wizard</p>
@@ -755,7 +755,7 @@ export default function OnboardingForm() {
           type="button"
           onClick={handleNext}
           disabled={isSubmitting || !sessionId}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-finance-accent px-6 py-3 text-white font-semibold shadow-[0_8px_20px_rgba(43,92,255,0.35)] hover:bg-[#1f4ee8] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-finance-accent px-6 py-3 text-white font-semibold shadow-[0_8px_18px_rgba(15,91,82,0.26)] hover:bg-[#0c4a43] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {isSubmitting ? "Saving..." : isLastStep ? "Submit Onboarding" : "Save and Continue"}

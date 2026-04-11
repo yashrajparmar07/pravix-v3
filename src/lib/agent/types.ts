@@ -103,3 +103,38 @@ export type AgentReadiness = {
   hasTaxProfile: boolean;
   hasHoldings: boolean;
 };
+
+export type DashboardModuleKey = "alerts" | "profile" | "holdings" | "tax" | "advisor";
+
+export type IntelligenceSourceStatus = "live" | "fallback";
+
+export type MarketIntelligenceSnapshot = {
+  fearGreedIndex: number | null;
+  fearGreedLabel: string;
+  fearGreedUpdatedAt: string | null;
+  usdInr: number | null;
+  usdInrPrevClose: number | null;
+  usdInrChangePct: number | null;
+  sentimentSourceStatus: IntelligenceSourceStatus;
+  fxSourceStatus: IntelligenceSourceStatus;
+};
+
+export type ModulePriority = {
+  module: DashboardModuleKey;
+  score: number;
+  title: string;
+  rationale: string;
+  suggestedAction: string;
+};
+
+export type FocusConfidence = "low" | "medium" | "high";
+
+export type DashboardIntelligenceSnapshot = {
+  generatedAt: string;
+  executiveSummary: string;
+  market: MarketIntelligenceSnapshot;
+  priorities: ModulePriority[];
+  recommendedFocus: DashboardModuleKey;
+  focusConfidence: FocusConfidence;
+  disclaimer: string;
+};

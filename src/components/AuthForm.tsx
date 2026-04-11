@@ -96,7 +96,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md rounded-2xl border border-finance-border bg-finance-panel p-6 md:p-8 shadow-[0_20px_45px_rgba(43,92,255,0.08)]"
+      className="w-full max-w-md rounded-2xl border border-finance-border bg-finance-panel p-6 md:p-8 shadow-[0_18px_36px_rgba(31,42,36,0.08)]"
     >
       <p className="text-[11px] uppercase tracking-[0.16em] text-finance-muted">
         {isSignUp ? "Create Account" : "Sign In"}

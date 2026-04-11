@@ -6,10 +6,12 @@ import { AlertCircle, CircleUserRound, Loader2, LogOut, RefreshCcw } from "lucid
 import SiteHeader from "@/components/SiteHeader";
 import AuthPanel from "@/components/AuthPanel";
 import AgentAdvisorPanel from "@/components/AgentAdvisorPanel";
+import ExecutiveIntelligencePanel from "@/components/ExecutiveIntelligencePanel";
 import HoldingsAnalyzerPanel from "@/components/HoldingsAnalyzerPanel";
 import SmartAlertsPanel from "@/components/SmartAlertsPanel";
 import TaxOptimizationPanel from "@/components/TaxOptimizationPanel";
 import { DashboardSectionCard, EmptyState, StatCard, StatusBadge } from "@/components/dashboard/DashboardPrimitives";
+import type { DashboardModuleKey } from "@/lib/agent/types";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type RiskAppetite = "conservative" | "moderate" | "aggressive";
@@ -71,6 +73,8 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [manualFocus, setManualFocus] = useState<DashboardModuleKey | null>(null);
+  const [recommendedFocus, setRecommendedFocus] = useState<DashboardModuleKey | null>(null);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -99,6 +103,8 @@ export default function DashboardPage() {
 
       setProfile(null);
       setSignedInEmail(null);
+      setManualFocus(null);
+      setRecommendedFocus(null);
       setRefreshTick((current) => current + 1);
     } catch (signOutError) {
       setError(signOutError instanceof Error ? signOutError.message : "Could not sign out right now.");
@@ -168,6 +174,13 @@ export default function DashboardPage() {
     };
   }, [refreshTick]);
 
+  useEffect(() => {
+    if (!signedInEmail || !profile) {
+      setManualFocus(null);
+      setRecommendedFocus(null);
+    }
+  }, [signedInEmail, profile]);
+
   const latestCreatedAt = useMemo(() => formatDateTime(profile?.created_at ?? null), [profile?.created_at]);
 
   const latestUpdatedAt = useMemo(() => formatDateTime(profile?.updated_at ?? null), [profile?.updated_at]);
@@ -201,22 +214,125 @@ export default function DashboardPage() {
     return Math.max(profile.target_amount_inr - profile.current_savings_inr, 0);
   }, [profile]);
 
+  const greetingLabel = useMemo(() => {
+    const hour = new Date().getHours();
+    const dayPart = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+    const nameSource = profile?.full_name.trim() || signedInEmail?.split("@")[0] || "";
+
+    if (nameSource) {
+      return `Good ${dayPart}, ${nameSource.split(" ")[0]}`;
+    }
+
+    return `Good ${dayPart}`;
+  }, [profile?.full_name, signedInEmail]);
+
+  const effectiveFocus = useMemo(() => manualFocus ?? recommendedFocus, [manualFocus, recommendedFocus]);
+
+  const orderedModuleKeys = useMemo(() => {
+    const baseOrder: DashboardModuleKey[] = ["alerts", "profile", "holdings", "tax", "advisor"];
+
+    if (!effectiveFocus) {
+      return baseOrder;
+    }
+
+    return [effectiveFocus, ...baseOrder.filter((moduleKey) => moduleKey !== effectiveFocus)];
+  }, [effectiveFocus]);
+
+  const getModuleContainerClassName = (moduleKey: DashboardModuleKey): string => {
+    if (moduleKey === effectiveFocus) {
+      return "rounded-2xl ring-2 ring-finance-accent/20 ring-offset-2 ring-offset-finance-bg shadow-[0_16px_34px_rgba(15,91,82,0.12)] transition-all duration-200";
+    }
+
+    return "rounded-2xl transition-all duration-200";
+  };
+
+  const renderSignedInModule = (moduleKey: DashboardModuleKey, activeProfile: ProfileRow) => {
+    if (moduleKey === "alerts") {
+      return <SmartAlertsPanel refreshKey={refreshTick} />;
+    }
+
+    if (moduleKey === "profile") {
+      return (
+        <DashboardSectionCard
+          className="pt-1"
+          eyebrow="Financial Snapshot"
+          title="Your financial command snapshot"
+          description="A quick status view before diving into portfolio and tax actions."
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-lg font-semibold text-finance-text">{activeProfile.full_name}</p>
+              <p className="text-sm text-finance-muted">{activeProfile.email}</p>
+            </div>
+            <StatusBadge label={profileFreshness.label} tone={profileFreshness.tone} />
+          </div>
+
+          <section className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Monthly Income" value={formatCurrency(activeProfile.monthly_income_inr)} tone="default" />
+            <StatCard label="Current Savings" value={formatCurrency(activeProfile.current_savings_inr)} tone="positive" />
+            <StatCard label="Target Gap" value={formatCurrency(targetGap)} tone={targetGap > 0 ? "warning" : "positive"} />
+            <StatCard
+              label="Risk and Horizon"
+              value={`${formatRisk(activeProfile.risk_appetite)} · ${activeProfile.target_horizon_years}y`}
+              tone="info"
+            />
+          </section>
+
+          <details className="mt-4 rounded-xl border border-finance-border bg-finance-surface/50 p-3.5 sm:p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-finance-text">
+              Profile metadata and planner notes
+            </summary>
+
+            <section className="mt-3 grid gap-3 sm:gap-4 md:grid-cols-2">
+              <article className="rounded-xl border border-finance-border bg-white p-3.5 sm:p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Profile Metadata</p>
+                  <StatusBadge
+                    label={activeProfile.consent_to_contact ? "contact allowed" : "contact blocked"}
+                    tone={activeProfile.consent_to_contact ? "success" : "warning"}
+                  />
+                </div>
+                <p className="mt-2 text-sm text-finance-text">Source: {activeProfile.source}</p>
+                <p className="mt-1 text-xs text-finance-muted">Captured: {latestCreatedAt}</p>
+                <p className="mt-1 text-xs text-finance-muted">Last Updated: {latestUpdatedAt}</p>
+              </article>
+
+              <article className="rounded-xl border border-finance-border bg-white p-3.5 sm:p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Planner Notes</p>
+                <p className="mt-2 text-sm leading-relaxed text-finance-text">
+                  {activeProfile.notes.trim() ? activeProfile.notes : "No additional notes provided in your latest submission."}
+                </p>
+              </article>
+            </section>
+          </details>
+        </DashboardSectionCard>
+      );
+    }
+
+    if (moduleKey === "holdings") {
+      return (
+        <HoldingsAnalyzerPanel
+          refreshKey={refreshTick}
+          onHoldingsChanged={() => setRefreshTick((current) => current + 1)}
+        />
+      );
+    }
+
+    if (moduleKey === "tax") {
+      return <TaxOptimizationPanel refreshKey={refreshTick} />;
+    }
+
+    return <AgentAdvisorPanel refreshKey={refreshTick} />;
+  };
+
   return (
     <>
       <SiteHeader />
       <div className="min-h-screen bg-finance-bg pb-12 pt-20 sm:pb-16 sm:pt-24">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-          <section className="rounded-2xl border border-finance-border bg-finance-panel p-5 shadow-[0_24px_50px_rgba(43,92,255,0.08)] transition-shadow duration-200 sm:p-6 md:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-4 sm:gap-5">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-finance-muted">Client Dashboard</p>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-finance-text sm:text-3xl md:text-5xl">
-                  Trusted Wealth Control Center
-                </h1>
-                <p className="mt-2.5 max-w-3xl text-sm text-finance-muted sm:mt-3 sm:text-base">
-                  A unified view of profile, alerts, portfolio health, tax readiness, and personalized AI guidance.
-                </p>
-              </div>
+          <section className="rounded-xl border border-finance-border bg-white/92 px-4 py-3 shadow-[0_12px_30px_rgba(10,25,48,0.06)] backdrop-blur-md sm:px-5 sm:py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-finance-text sm:text-base">{greetingLabel}</p>
 
               <div className="flex flex-wrap gap-2">
                 <button
@@ -318,65 +434,21 @@ export default function DashboardPage() {
             </DashboardSectionCard>
           )}
 
-          {!isLoading && !error && profile && (
-            <DashboardSectionCard
-              className="mt-5 sm:mt-6"
-              eyebrow="Overview"
-              title="Your financial command snapshot"
-              description="A quick status view before diving into alerts, portfolio, tax, and AI guidance."
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-lg font-semibold text-finance-text">{profile.full_name}</p>
-                  <p className="text-sm text-finance-muted">{profile.email}</p>
-                </div>
-                <StatusBadge label={profileFreshness.label} tone={profileFreshness.tone} />
-              </div>
-
-              <section className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard label="Monthly Income" value={formatCurrency(profile.monthly_income_inr)} tone="default" />
-                <StatCard label="Current Savings" value={formatCurrency(profile.current_savings_inr)} tone="positive" />
-                <StatCard label="Target Gap" value={formatCurrency(targetGap)} tone={targetGap > 0 ? "warning" : "positive"} />
-                <StatCard
-                  label="Risk and Horizon"
-                  value={`${formatRisk(profile.risk_appetite)} · ${profile.target_horizon_years}y`}
-                  tone="info"
-                />
-              </section>
-
-              <section className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 md:grid-cols-2">
-                <article className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Profile Metadata</p>
-                    <StatusBadge
-                      label={profile.consent_to_contact ? "contact allowed" : "contact blocked"}
-                      tone={profile.consent_to_contact ? "success" : "warning"}
-                    />
-                  </div>
-                  <p className="mt-2 text-sm text-finance-text">Source: {profile.source}</p>
-                  <p className="mt-1 text-xs text-finance-muted">Captured: {latestCreatedAt}</p>
-                  <p className="mt-1 text-xs text-finance-muted">Last Updated: {latestUpdatedAt}</p>
-                </article>
-
-                <article className="rounded-xl border border-finance-border bg-finance-surface/70 p-3.5 sm:p-4">
-                  <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Planner Notes</p>
-                  <p className="mt-2 text-sm leading-relaxed text-finance-text">
-                    {profile.notes.trim() ? profile.notes : "No additional notes provided in your latest submission."}
-                  </p>
-                </article>
-              </section>
-            </DashboardSectionCard>
-          )}
-
-          {!isLoading && !error && signedInEmail && (
+          {!isLoading && !error && signedInEmail && profile && (
             <div className="mt-5 space-y-5 sm:mt-6 sm:space-y-6">
-              <SmartAlertsPanel refreshKey={refreshTick} />
-              <HoldingsAnalyzerPanel
+              <ExecutiveIntelligencePanel
                 refreshKey={refreshTick}
-                onHoldingsChanged={() => setRefreshTick((current) => current + 1)}
+                manualFocus={manualFocus}
+                effectiveFocus={effectiveFocus}
+                onFocusChange={setManualFocus}
+                onRecommendedFocusChange={setRecommendedFocus}
               />
-              <TaxOptimizationPanel refreshKey={refreshTick} />
-              <AgentAdvisorPanel refreshKey={refreshTick} />
+
+              {orderedModuleKeys.map((moduleKey) => (
+                <div key={moduleKey} className={getModuleContainerClassName(moduleKey)}>
+                  {renderSignedInModule(moduleKey, profile)}
+                </div>
+              ))}
             </div>
           )}
         </div>

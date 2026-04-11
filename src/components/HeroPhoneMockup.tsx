@@ -31,7 +31,7 @@ export default function HeroPhoneMockup() {
             bottom: "-30px", // Adjusted for inner centering
             width: "300px",
             height: "20px",
-            background: "#8EB0E8",
+            background: "#98afa7",
             borderRadius: "50%",
             filter: "blur(6px)",
             opacity: 0.6,
@@ -59,20 +59,20 @@ export default function HeroPhoneMockup() {
               right: "-25px",
               bottom: "-5px",
               left: "5px",
-              background: "linear-gradient(145deg, #81b3ff 0%, #4f82e3 45%, #9fc3ff 100%)",
+              background: "linear-gradient(145deg, #6f9f95 0%, #4d7f76 45%, #9bb9b2 100%)",
               borderRadius: "58px",
-              border: "1px solid #3d6fcb",
-              boxShadow: "inset 0 1px 1px rgba(255,255,255,0.8), inset -5px -8px 12px rgba(35,71,146,0.35), 18px 28px 38px rgba(20,35,64,0.28)",
+              border: "1px solid #4d756d",
+              boxShadow: "inset 0 1px 1px rgba(255,255,255,0.8), inset -5px -8px 12px rgba(41,74,68,0.28), 18px 28px 38px rgba(31,42,36,0.24)",
             }}
           >
             {/* Top highlight segment on casing */}
             <div style={{ position: "absolute", top: "0", right: "20%", width: "46%", height: "16px", background: "rgba(206,229,255,0.7)", borderRadius: "16px 16px 0 0" }} />
             {/* Left-side action + volume buttons */}
-            <div style={{ position: "absolute", top: "130px", left: "-4px", width: "7px", height: "32px", background: "#74a8ff", borderRadius: "4px", border: "1px solid #3d6fcb" }} />
-            <div style={{ position: "absolute", top: "178px", left: "-4px", width: "7px", height: "58px", background: "#74a8ff", borderRadius: "4px", border: "1px solid #3d6fcb" }} />
-            <div style={{ position: "absolute", top: "248px", left: "-4px", width: "7px", height: "58px", background: "#74a8ff", borderRadius: "4px", border: "1px solid #3d6fcb" }} />
+            <div style={{ position: "absolute", top: "130px", left: "-4px", width: "7px", height: "32px", background: "#6d998f", borderRadius: "4px", border: "1px solid #4d756d" }} />
+            <div style={{ position: "absolute", top: "178px", left: "-4px", width: "7px", height: "58px", background: "#6d998f", borderRadius: "4px", border: "1px solid #4d756d" }} />
+            <div style={{ position: "absolute", top: "248px", left: "-4px", width: "7px", height: "58px", background: "#6d998f", borderRadius: "4px", border: "1px solid #4d756d" }} />
             {/* Right-side power button */}
-            <div style={{ position: "absolute", top: "185px", right: "-4px", width: "7px", height: "84px", background: "#74a8ff", borderRadius: "4px", border: "1px solid #3d6fcb" }} />
+            <div style={{ position: "absolute", top: "185px", right: "-4px", width: "7px", height: "84px", background: "#6d998f", borderRadius: "4px", border: "1px solid #4d756d" }} />
           </div>
 
         {/* ── Front Glass / Frame ── */}
@@ -80,9 +80,9 @@ export default function HeroPhoneMockup() {
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(160deg, #d7e7ff 0%, #a9c6f7 48%, #e9f2ff 100%)",
+            background: "linear-gradient(160deg, #d9ddd1 0%, #b6c6c0 48%, #f2efe6 100%)",
             borderRadius: "52px",
-            border: "1px solid #6f94ca",
+            border: "1px solid #7f938c",
             boxShadow: "-4px -4px 14px rgba(255,255,255,0.7), inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 3px rgba(57,74,101,0.2)",
             display: "flex",
             flexDirection: "column",
@@ -94,7 +94,7 @@ export default function HeroPhoneMockup() {
             style={{
               position: "absolute",
               inset: "7px",
-              background: "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
+              background: "linear-gradient(180deg, #ffffff 0%, #f7f4ec 100%)",
               borderRadius: "45px",
               overflow: "hidden",
               display: "flex",
@@ -117,21 +117,21 @@ export default function HeroPhoneMockup() {
                 pointerEvents: "none",
               }}
             >
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#243553", letterSpacing: "0.2px" }}>9:41</span>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#2f3f3a", letterSpacing: "0.2px" }}>9:41</span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: "1px", height: "10px" }}>
-                  <span style={{ display: "block", width: "2px", height: "4px", background: "#243553", borderRadius: "1px" }} />
-                  <span style={{ display: "block", width: "2px", height: "6px", background: "#243553", borderRadius: "1px" }} />
-                  <span style={{ display: "block", width: "2px", height: "8px", background: "#243553", borderRadius: "1px" }} />
-                  <span style={{ display: "block", width: "2px", height: "10px", background: "#243553", borderRadius: "1px" }} />
+                  <span style={{ display: "block", width: "2px", height: "4px", background: "#2f3f3a", borderRadius: "1px" }} />
+                  <span style={{ display: "block", width: "2px", height: "6px", background: "#2f3f3a", borderRadius: "1px" }} />
+                  <span style={{ display: "block", width: "2px", height: "8px", background: "#2f3f3a", borderRadius: "1px" }} />
+                  <span style={{ display: "block", width: "2px", height: "10px", background: "#2f3f3a", borderRadius: "1px" }} />
                 </div>
                 <svg width="14" height="10" viewBox="0 0 18 12" fill="none">
-                  <path d="M1 11C2.5 7 5 5 9 5C13 5 15.5 7 17 11" stroke="#243553" strokeWidth="1.6" strokeLinecap="round" />
-                  <path d="M4 11C5 8.8 6.5 7.8 9 7.8C11.5 7.8 13 8.8 14 11" stroke="#243553" strokeWidth="1.6" strokeLinecap="round" />
+                  <path d="M1 11C2.5 7 5 5 9 5C13 5 15.5 7 17 11" stroke="#2f3f3a" strokeWidth="1.6" strokeLinecap="round" />
+                  <path d="M4 11C5 8.8 6.5 7.8 9 7.8C11.5 7.8 13 8.8 14 11" stroke="#2f3f3a" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
-                <div style={{ width: "20px", height: "10px", border: "1.5px solid #243553", borderRadius: "3px", position: "relative" }}>
-                  <div style={{ position: "absolute", top: "1px", left: "1px", width: "13px", height: "6px", background: "#243553", borderRadius: "1px" }} />
-                  <div style={{ position: "absolute", right: "-3px", top: "2px", width: "2px", height: "4px", background: "#243553", borderRadius: "0 1px 1px 0" }} />
+                <div style={{ width: "20px", height: "10px", border: "1.5px solid #2f3f3a", borderRadius: "3px", position: "relative" }}>
+                  <div style={{ position: "absolute", top: "1px", left: "1px", width: "13px", height: "6px", background: "#2f3f3a", borderRadius: "1px" }} />
+                  <div style={{ position: "absolute", right: "-3px", top: "2px", width: "2px", height: "4px", background: "#2f3f3a", borderRadius: "0 1px 1px 0" }} />
                 </div>
               </div>
             </div>
@@ -443,3 +443,4 @@ export default function HeroPhoneMockup() {
     </div>
   );
 }
+

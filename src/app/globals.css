@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a1930;
+  --background: #f7f4ed;
+  --foreground: #1f2a24;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-finance-bg: #ffffff;
-  --color-finance-surface: #f0f7ff;
-  --color-finance-panel: #ffffff;
-  --color-finance-panel-2: #e0f0ff;
-  --color-finance-border: #d0e3ff;
-  --color-finance-border-soft: #e6f0ff;
-  --color-finance-green: #15803d;
-  --color-finance-red: #ef4444;
-  --color-finance-accent: #2b5cff;
-  --color-finance-text: #0a1930;
-  --color-finance-muted: #5a6b8a;
-  --color-finance-dim: #8a9bb0;
+  --color-finance-bg: #f7f4ed;
+  --color-finance-surface: #f1ede3;
+  --color-finance-panel: #fbf8f1;
+  --color-finance-panel-2: #ece7db;
+  --color-finance-border: #d8d0c1;
+  --color-finance-border-soft: #e6dfd2;
+  --color-finance-green: #2f6f57;
+  --color-finance-red: #c44f45;
+  --color-finance-accent: #0f5b52;
+  --color-finance-gold: #b38a4a;
+  --color-finance-text: #1f2a24;
+  --color-finance-muted: #64726b;
+  --color-finance-dim: #8a948d;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

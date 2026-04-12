@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertCircle,
   ArrowRight,
+  BrainCircuit,
   Target,
   ShieldCheck,
   Compass,
@@ -59,6 +61,17 @@ type HomepageMarketPayload = {
   error?: string;
 };
 
+type HeroSnapshot = {
+  goalProgressPct: number;
+  goalCurrentInr: string;
+  goalTargetInr: string;
+  nextActionPrefix: string;
+  nextActionAmount: string;
+  nextActionSuffix: string;
+  taxHeadroomInr: string;
+  aiBuddyQuote: string;
+};
+
 const fallbackSentimentTrend: LiveChartPoint[] = [
   { label: "Apr 01", value: 41, avg: 40 },
   { label: "Apr 02", value: 43, avg: 41 },
@@ -105,6 +118,39 @@ const taxEfficiencyData = [
 ];
 
 const allocationColors = ["#2f7a70", "#b38a4a", "#86a9a3", "#6fa39a", "#ece6d8"];
+
+const heroSnapshots: HeroSnapshot[] = [
+  {
+    goalProgressPct: 68,
+    goalCurrentInr: "INR 13.6L",
+    goalTargetInr: "INR 20L",
+    nextActionPrefix: "Increase monthly SIP by",
+    nextActionAmount: "INR 2,000",
+    nextActionSuffix: "Keeps your retirement goal on schedule by Q4.",
+    taxHeadroomInr: "INR 42,000",
+    aiBuddyQuote: "Shift your next SIP split to 55% equity, 35% debt, and 10% gold for smoother goal progress.",
+  },
+  {
+    goalProgressPct: 71,
+    goalCurrentInr: "INR 14.2L",
+    goalTargetInr: "INR 20L",
+    nextActionPrefix: "Add one top-up SIP of",
+    nextActionAmount: "INR 3,000",
+    nextActionSuffix: "This month to keep your home goal timeline intact.",
+    taxHeadroomInr: "INR 38,500",
+    aiBuddyQuote: "You are on track. Keep debt at 35% and avoid pausing SIP during short-term volatility.",
+  },
+  {
+    goalProgressPct: 65,
+    goalCurrentInr: "INR 13.0L",
+    goalTargetInr: "INR 20L",
+    nextActionPrefix: "Continue your monthly SIP and redirect",
+    nextActionAmount: "INR 1,500",
+    nextActionSuffix: "from idle cash to close this month\'s pace gap.",
+    taxHeadroomInr: "INR 46,000",
+    aiBuddyQuote: "Section 80C room remains. Use this headroom early instead of waiting for year-end tax pressure.",
+  },
+];
 
 const motionEase = [0.22, 1, 0.36, 1] as const;
 
@@ -156,6 +202,7 @@ function createFeatureCardReveal(isCompactMotion: boolean) {
 
 export default function Home() {
   const [isHeroReady, setIsHeroReady] = useState(false);
+  const [activeHeroSnapshotIndex, setActiveHeroSnapshotIndex] = useState(0);
   const [liveMarket, setLiveMarket] = useState<HomepageMarketPayload | null>(null);
   const [isLiveMarketLoading, setIsLiveMarketLoading] = useState(true);
   const [isCompactMotion, setIsCompactMotion] = useState(false);
@@ -191,6 +238,16 @@ export default function Home() {
 
     return () => {
       mediaQuery.removeListener(updateMotionDensity);
+    };
+  }, []);
+
+  useEffect(() => {
+    const snapshotTimer = window.setInterval(() => {
+      setActiveHeroSnapshotIndex((current) => (current + 1) % heroSnapshots.length);
+    }, 4000);
+
+    return () => {
+      window.clearInterval(snapshotTimer);
     };
   }, []);
 
@@ -257,6 +314,7 @@ export default function Home() {
   const denseSectionViewport = { once: true, amount: isCompactMotion ? 0.1 : 0.2 };
   const cardGridViewport = { once: true, amount: isCompactMotion ? 0.14 : 0.25 };
   const narrativeViewport = { once: true, amount: isCompactMotion ? 0.18 : 0.35 };
+  const activeHeroSnapshot = heroSnapshots[activeHeroSnapshotIndex] ?? heroSnapshots[0];
 
   return (
     <>
@@ -341,58 +399,123 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right: Premium simplified dashboard mockup */}
-              <div className="mx-auto w-full max-w-[32rem] lg:mx-0 lg:justify-self-end">
-                <div className="relative">
-                  <div className="pointer-events-none absolute -right-4 -top-4 h-[94%] w-[94%] rounded-[1.8rem] border border-[#2f7a70]/12 bg-white/60" />
-                  <div className="pointer-events-none absolute -left-4 bottom-4 h-[88%] w-[86%] rounded-[1.7rem] border border-[#b38a4a]/20 bg-[#f6f1e5]/70" />
+              {/* Right: Hero snapshot card */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative mx-auto w-full max-w-[34rem] lg:mx-0 lg:justify-self-end"
+              >
+                <div className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-gradient-to-tr from-[#0f5b52]/12 to-transparent rotate-3 scale-105" />
+                <div className="pointer-events-none absolute inset-x-5 -bottom-4 h-9 rounded-[100%] bg-[#61766f]/20 blur-[14px]" />
 
-                  <div className="relative rounded-[1.9rem] border border-finance-border bg-white p-5 shadow-[0_26px_46px_rgba(18,37,33,0.14)] sm:p-6">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-finance-muted">Pravix Plan Snapshot</p>
-                      <span className="rounded-full bg-[#ecf4f2] px-3 py-1 text-[11px] font-semibold text-finance-accent">Today</span>
+                <div className="relative z-10 overflow-hidden rounded-3xl border border-finance-border/60 bg-white/80 shadow-[0_24px_56px_rgba(19,40,36,0.22)] backdrop-blur-xl">
+                  <div className="flex items-center justify-between border-b border-finance-border/60 bg-finance-surface/60 px-6 py-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-finance-accent">
+                      <Target className="h-4 w-4" />
+                      Pravix Plan Snapshot
                     </div>
-
-                    <div className="mt-5 space-y-3.5">
-                      <article className="rounded-2xl border border-finance-border bg-[#f9f7f1] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-finance-muted">Goal progress card</p>
-                        <div className="mt-2 flex items-end justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-finance-text">Home down payment</p>
-                            <p className="mt-1 text-xs text-finance-muted">INR 13.6L of INR 20L target</p>
-                          </div>
-                          <span className="text-sm font-semibold text-finance-accent">68%</span>
-                        </div>
-                        <div className="mt-3 h-2.5 rounded-full bg-[#dce6e3]">
-                          <div className="h-full w-[68%] rounded-full bg-finance-accent" />
-                        </div>
-                      </article>
-
-                      <article className="rounded-2xl border border-finance-border bg-white p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-finance-muted">Next action card</p>
-                        <p className="mt-2 text-sm font-semibold text-finance-text">Increase monthly SIP by INR 2,000</p>
-                        <p className="mt-1 text-xs text-finance-muted">Keeps your retirement goal on schedule by Q4.</p>
-                      </article>
-
-                      <article className="rounded-2xl border border-[#b38a4a]/30 bg-[#fbf8f0] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-finance-muted">Tax runway widget</p>
-                        <div className="mt-2 flex items-end justify-between">
-                          <p className="text-sm font-semibold text-finance-text">Section 80C headroom</p>
-                          <p className="text-sm font-semibold text-[#9a763b]">INR 42,000</p>
-                        </div>
-                        <div className="mt-3 h-2.5 rounded-full bg-[#eadfca]">
-                          <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-[#2f7a70] to-[#b38a4a]" />
-                        </div>
-                      </article>
-                    </div>
-
-                    <div className="mt-3 rounded-2xl border border-[#2f7a70]/30 bg-[#eef6f4] px-4 py-3 text-sm text-finance-text md:absolute md:-bottom-7 md:right-5 md:mt-0 md:max-w-[16rem] md:shadow-[0_14px_28px_rgba(15,91,82,0.15)]">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-finance-accent">AI recommendation bubble</p>
-                      <p className="mt-1.5 leading-relaxed">Shift your next SIP split to 55% equity, 35% debt, and 10% gold for smoother goal progress.</p>
+                    <div className="flex gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-full bg-finance-border" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-finance-border" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-finance-border" />
                     </div>
                   </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeHeroSnapshotIndex}
+                      className="space-y-8 p-8"
+                      initial={{ opacity: 0, y: 14, scale: 0.995 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.995 }}
+                      transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-end justify-between gap-3">
+                          <div>
+                            <p className="mb-1 flex items-center gap-1.5 text-sm font-medium text-finance-muted">
+                              <Target className="h-3.5 w-3.5 text-finance-accent" />
+                              Goal progress
+                            </p>
+                            <h3 className="flex items-center gap-2 font-serif text-3xl font-bold text-finance-text">
+                              <Wallet className="h-6 w-6 text-finance-accent/80" />
+                              Home down payment
+                            </h3>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-flex items-center gap-1.5 text-4xl font-bold text-finance-text">
+                              <LineChartIcon className="h-5 w-5 text-finance-accent" />
+                              {activeHeroSnapshot.goalProgressPct}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#d8e0dd]">
+                          <motion.div
+                            className="h-full rounded-full bg-finance-accent"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${activeHeroSnapshot.goalProgressPct}%` }}
+                            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                          />
+                        </div>
+
+                        <p className="flex items-center gap-1.5 text-sm text-finance-muted">
+                          <Wallet className="h-4 w-4 text-finance-accent/70" />
+                          {activeHeroSnapshot.goalCurrentInr} of {activeHeroSnapshot.goalTargetInr} target
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-finance-accent/10 bg-finance-accent/5 p-5">
+                        <div className="flex gap-3">
+                          <div className="rounded-full bg-finance-accent/12 p-1.5">
+                            <AlertCircle className="h-4.5 w-4.5 shrink-0 text-finance-accent" />
+                          </div>
+                          <div>
+                            <h4 className="mb-1 flex items-center gap-1.5 text-sm font-bold text-finance-text">
+                              <BellRing className="h-4 w-4 text-finance-accent" />
+                              Next action
+                            </h4>
+                            <p className="text-sm leading-relaxed text-finance-text/80">
+                              {activeHeroSnapshot.nextActionPrefix}{" "}
+                              <span className="font-bold">{activeHeroSnapshot.nextActionAmount}</span>{" "}
+                              - {activeHeroSnapshot.nextActionSuffix}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-2xl border border-finance-border bg-white p-4">
+                          <p className="mb-1 flex items-center gap-1 text-xs font-medium text-finance-muted">
+                            <Calculator className="h-3.5 w-3.5 text-finance-accent/80" />
+                            Tax runway
+                          </p>
+                          <p className="flex items-center gap-1.5 text-sm font-medium text-finance-text">
+                            <ShieldCheck className="h-3.5 w-3.5 text-finance-accent/80" />
+                            Section 80C headroom
+                          </p>
+                          <p className="mt-1 text-2xl font-bold text-finance-accent">{activeHeroSnapshot.taxHeadroomInr}</p>
+                        </div>
+
+                        <div className="relative overflow-hidden rounded-2xl bg-finance-accent p-4 text-white">
+                          <div className="absolute right-0 top-0 p-3 opacity-20">
+                            <BrainCircuit className="h-12 w-12" />
+                          </div>
+                          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-white/80">
+                            <BrainCircuit className="h-3.5 w-3.5" />
+                            <Sparkles className="h-3.5 w-3.5" />
+                            AI Buddy
+                          </p>
+                          <p className="relative z-10 text-sm font-medium leading-tight">
+                            &quot;{activeHeroSnapshot.aiBuddyQuote}&quot;
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>

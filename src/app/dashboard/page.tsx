@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CircleUserRound, Loader2, LogOut, RefreshCcw } from "lucide-react";
+import { AlertCircle, CircleUserRound, Loader2, LogOut, Minus, RefreshCcw, TrendingDown, TrendingUp } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import AuthPanel from "@/components/AuthPanel";
 import AgentAdvisorPanel from "@/components/AgentAdvisorPanel";
@@ -31,6 +31,22 @@ type ProfileRow = {
   source: string;
   created_at: string;
   updated_at: string;
+};
+
+type MarketIndicator = {
+  id: "NIFTY50" | "BANKNIFTY" | "SENSEX";
+  displayName: string;
+  value: number;
+  changeAbs: number;
+  changePct: number;
+  trend: "up" | "down" | "flat";
+};
+
+type MarketIndicatorsResponse = {
+  ok: true;
+  generatedAt: string;
+  source: "live" | "fallback";
+  indices: MarketIndicator[];
 };
 
 const inrFormatter = new Intl.NumberFormat("en-IN", {
@@ -66,6 +82,22 @@ function formatDateTime(value: string | null): string {
   });
 }
 
+function formatIndexValue(value: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatSignedNumber(value: number, digits = 2): string {
+  const prefix = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${prefix}${Math.abs(value).toFixed(digits)}`;
+}
+
+function formatSignedPercent(value: number): string {
+  return `${formatSignedNumber(value, 2)}%`;
+}
+
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +107,11 @@ export default function DashboardPage() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [manualFocus, setManualFocus] = useState<DashboardModuleKey | null>(null);
   const [recommendedFocus, setRecommendedFocus] = useState<DashboardModuleKey | null>(null);
+  const [marketIndicators, setMarketIndicators] = useState<MarketIndicator[]>([]);
+  const [marketSource, setMarketSource] = useState<"live" | "fallback" | null>(null);
+  const [marketGeneratedAt, setMarketGeneratedAt] = useState<string | null>(null);
+  const [isMarketLoading, setIsMarketLoading] = useState(true);
+  const [marketError, setMarketError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -88,6 +125,49 @@ export default function DashboardPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMarketIndicators() {
+      setIsMarketLoading(true);
+      setMarketError(null);
+
+      try {
+        const response = await fetch("/api/market/indices", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Market API failed with status ${response.status}`);
+        }
+
+        const payload = (await response.json()) as MarketIndicatorsResponse;
+
+        if (!cancelled) {
+          setMarketIndicators(Array.isArray(payload.indices) ? payload.indices : []);
+          setMarketSource(payload.source ?? "fallback");
+          setMarketGeneratedAt(payload.generatedAt ?? null);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setMarketError(loadError instanceof Error ? loadError.message : "Could not load market indicators.");
+          setMarketSource("fallback");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsMarketLoading(false);
+        }
+      }
+    }
+
+    void loadMarketIndicators();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -226,6 +306,22 @@ export default function DashboardPage() {
     return `Good ${dayPart}`;
   }, [profile?.full_name, signedInEmail]);
 
+  const marketStatus = useMemo(() => {
+    if (isMarketLoading) {
+      return { label: "Loading", tone: "neutral" as const };
+    }
+
+    if (marketSource === "live") {
+      const suffix = marketGeneratedAt
+        ? ` • ${new Date(marketGeneratedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`
+        : "";
+
+      return { label: `Live feed${suffix}`, tone: "success" as const };
+    }
+
+    return { label: "Fallback feed", tone: "warning" as const };
+  }, [isMarketLoading, marketGeneratedAt, marketSource]);
+
   const effectiveFocus = useMemo(() => manualFocus ?? recommendedFocus, [manualFocus, recommendedFocus]);
 
   const orderedModuleKeys = useMemo(() => {
@@ -357,6 +453,67 @@ export default function DashboardPage() {
                 ) : null}
               </div>
             </div>
+          </section>
+
+          <section className="mt-4 rounded-xl border border-finance-border bg-white/90 px-4 py-3.5 shadow-[0_10px_24px_rgba(10,25,48,0.05)] sm:px-5 sm:py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.14em] text-finance-muted">Live Market Indicators</p>
+                <p className="mt-1 text-sm font-medium text-finance-text sm:text-base">
+                  NIFTY50, BANKNIFTY and SENSEX daily move
+                </p>
+              </div>
+
+              <StatusBadge label={marketStatus.label} tone={marketStatus.tone} />
+            </div>
+
+            {isMarketLoading ? (
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <article
+                    key={`market-skeleton-${index}`}
+                    className="h-24 animate-pulse rounded-xl border border-finance-border bg-finance-surface/70"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                {marketIndicators.map((indicator) => {
+                  const isUp = indicator.trend === "up";
+                  const isDown = indicator.trend === "down";
+                  const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
+                  const toneCard = isUp
+                    ? "border-finance-green/30 bg-finance-green/10"
+                    : isDown
+                      ? "border-finance-red/30 bg-finance-red/10"
+                      : "border-finance-border bg-finance-surface/60";
+                  const toneText = isUp ? "text-finance-green" : isDown ? "text-finance-red" : "text-finance-muted";
+
+                  return (
+                    <article key={indicator.id} className={`rounded-xl border p-3.5 sm:p-4 ${toneCard}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.12em] text-finance-muted">{indicator.displayName}</p>
+                        <TrendIcon className={`h-4 w-4 ${toneText}`} />
+                      </div>
+
+                      <p className="mt-2 text-xl font-semibold text-finance-text sm:text-2xl">
+                        {formatIndexValue(indicator.value)}
+                      </p>
+
+                      <p className={`mt-1 text-sm font-medium ${toneText}`}>
+                        {formatSignedPercent(indicator.changePct)} ({formatSignedNumber(indicator.changeAbs, 2)} pts)
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            {!isMarketLoading && marketIndicators.length === 0 ? (
+              <p className="mt-3 text-xs text-finance-muted">No market indicators available right now.</p>
+            ) : null}
+
+            {marketError ? <p className="mt-3 text-xs text-finance-red">Market feed warning: {marketError}</p> : null}
           </section>
 
           {isLoading && (

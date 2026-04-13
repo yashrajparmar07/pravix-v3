@@ -15,14 +15,13 @@ export default function HeroPhoneMockup() {
 
   return (
     <div
-      className="relative w-full flex justify-center items-center"
+      className="relative flex w-full items-center justify-center min-h-[420px] sm:min-h-[500px] lg:min-h-[560px] xl:min-h-[620px]"
       style={{
-        minHeight: "600px",
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
       {/* ── Global Scaler wrapper ── */}
-      <div style={{ transform: "scale(0.85)", position: "relative", width: "350px", height: "680px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+      <div className="relative flex h-[680px] w-[350px] items-center justify-center origin-center scale-[0.62] sm:scale-[0.7] md:scale-[0.78] lg:scale-[0.75] xl:scale-[0.86] 2xl:scale-[0.94]">
         
         {/* ── Floor Shadow ── */}
         <div

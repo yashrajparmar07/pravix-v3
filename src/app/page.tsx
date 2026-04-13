@@ -275,19 +275,23 @@ export default function Home() {
       <SiteHeader />
       <div className={`flex flex-col min-h-screen transition-opacity duration-700 ${isHeroReady ? "opacity-100" : "opacity-0"}`}>
         {/* HERO SECTION */}
-        <section className="relative overflow-hidden min-h-screen pt-24 pb-12 md:pt-28">
+        <section className="relative overflow-hidden pt-24 pb-12 md:pt-28 lg:min-h-screen">
           <div className="absolute inset-0">
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: "url('/image/hero-banner-1.jpg')" }}
+              className="absolute inset-0 bg-no-repeat"
+              style={{
+                backgroundImage: "url('/image/hero-banner-1.jpg')",
+                backgroundPosition: "center",
+                backgroundSize: "100% 100%",
+              }}
             />
             <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(5,16,37,0.68),rgba(5,16,37,0.5)_38%,rgba(255,255,255,0.12)_100%)]" />
           </div>
 
-          <div className="relative z-20 mx-auto flex min-h-[calc(100vh-7rem)] w-full max-w-7xl flex-col items-center gap-12 px-6 md:px-10 lg:flex-row lg:items-center lg:gap-6 lg:px-14">
+          <div className="relative z-20 mx-auto flex w-full max-w-7xl flex-col items-center gap-8 px-6 md:gap-10 md:px-10 lg:min-h-[calc(100vh-7rem)] lg:flex-row lg:items-center lg:gap-6 lg:px-14 xl:gap-10">
             {/* Left: Hero Content */}
-            <div className="relative z-20 -mt-[20px] flex w-full max-w-[38rem] flex-1 flex-col items-center text-center lg:items-start lg:text-left">
+            <div className="relative z-20 -mt-8 flex w-full max-w-[38rem] flex-1 flex-col items-center text-center sm:-mt-10 md:-mt-12 lg:-mt-14 lg:items-start lg:text-left xl:-mt-16 2xl:-mt-20">
               <div className="mb-8 flex w-full justify-center">
                 <div className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-50 shadow-sm backdrop-blur-md md:text-xs">
                   <span className="relative flex h-2.5 w-2.5">
@@ -306,8 +310,7 @@ export default function Home() {
                 <div className="relative z-10 flex w-full flex-col items-center justify-center">
                   <h1 className="m-0 flex w-full flex-col items-center justify-center text-center">
                     <span
-                      className="block w-full text-center text-[clamp(3.8rem,9vw,6.5rem)] font-extrabold leading-[0.85] tracking-[-0.04em] text-white drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
-                      style={{ fontFamily: "var(--font-brand)" }}
+                      className="block w-full text-center text-[clamp(3.8rem,9vw,6.5rem)] font-bold leading-[0.85] tracking-tight text-white drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)] transition-colors duration-300"
                     >
                       Pravix
                     </span>
@@ -360,7 +363,7 @@ export default function Home() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="flex w-full max-w-md flex-1 justify-center lg:max-w-lg lg:justify-end"
+              className="flex w-full max-w-[20rem] flex-1 justify-center sm:max-w-[24rem] md:max-w-[27rem] lg:max-w-[30rem] lg:justify-end xl:max-w-[34rem]"
             >
               <HeroPhoneMockup />
             </motion.div>

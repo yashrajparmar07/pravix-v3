@@ -272,32 +272,48 @@ export default function ExecutiveIntelligencePanel({
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-finance-border bg-finance-surface/40 p-2.5">
             <button
               type="button"
               onClick={() => onFocusChange(null)}
               className={`inline-flex h-9 items-center rounded-full border px-3.5 text-xs font-semibold transition-all duration-150 ${
                 manualFocus === null
-                  ? "border-finance-accent bg-finance-accent/10 text-finance-accent"
-                  : "border-finance-border bg-white text-finance-text hover:bg-finance-surface"
+                  ? "border-[#2b5cff] bg-[linear-gradient(135deg,#2b5cff_0%,#1f46cf_100%)] text-white shadow-[0_8px_18px_rgba(43,92,255,0.32)]"
+                  : "border-[#c8d8f6] bg-white text-[#2a3f63] hover:border-[#adc5f4] hover:bg-[#f4f8ff]"
               }`}
             >
               Auto Focus ({moduleLabel[snapshot.recommendedFocus]})
             </button>
-            {sortedPriorities.map((priority) => (
-              <button
-                key={`focus-${priority.module}`}
-                type="button"
-                onClick={() => onFocusChange(priority.module)}
-                className={`inline-flex h-9 items-center rounded-full border px-3.5 text-xs font-semibold transition-all duration-150 ${
-                  manualFocus === priority.module
-                    ? "border-finance-accent bg-finance-accent/10 text-finance-accent"
-                    : "border-finance-border bg-white text-finance-text hover:bg-finance-surface"
-                }`}
-              >
-                Focus {moduleLabel[priority.module]}
-              </button>
-            ))}
+            {sortedPriorities.map((priority) => {
+              const isManualSelected = manualFocus === priority.module;
+              const isRecommended = snapshot.recommendedFocus === priority.module;
+
+              return (
+                <button
+                  key={`focus-${priority.module}`}
+                  type="button"
+                  onClick={() => onFocusChange(priority.module)}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold transition-all duration-150 ${
+                    isManualSelected
+                      ? "border-[#2b5cff] bg-[linear-gradient(135deg,#2b5cff_0%,#1f46cf_100%)] text-white shadow-[0_8px_18px_rgba(43,92,255,0.32)]"
+                      : isRecommended
+                        ? "border-[#f0c772]/65 bg-[#fff6de] text-[#7d5f1f] shadow-[0_4px_12px_rgba(240,199,114,0.24)]"
+                        : "border-[#c8d8f6] bg-white text-[#2a3f63] hover:border-[#adc5f4] hover:bg-[#f4f8ff]"
+                  }`}
+                >
+                  Focus {moduleLabel[priority.module]}
+                  {isRecommended ? (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.06em] ${
+                        isManualSelected ? "bg-white/20 text-white" : "bg-[#f8df9f] text-[#7a5914]"
+                      }`}
+                    >
+                      AI
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
 
           <p className="mt-3 text-xs text-finance-muted">{snapshot.disclaimer}</p>
